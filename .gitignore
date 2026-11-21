@@ -25,3 +25,6 @@ Thumbs.db
 # Python dependencies of auxiliary tools
 __pycache__/
 .venv/
+
+# Local build output of scripts/fyne-tools/build.sh
+/build/
