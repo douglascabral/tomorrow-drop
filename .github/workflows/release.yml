@@ -1,6 +1,6 @@
 name: Release
 
-# Builds the command-line program (Linux and Windows), the Linux package (.deb)
+# Builds the command-line program (Linux, Windows and macOS), the Linux package (.deb)
 # and the Windows application (.exe). A version tag (v*) also publishes them as
 # a GitHub release. A manual run only builds them, so the build can be checked.
 on:
@@ -32,11 +32,19 @@ jobs:
       - name: Collect the files
         run: |
           mkdir -p release
-          cp bin/tdrop-linux-amd64 bin/tdrop-windows-amd64.exe release/
+          cp bin/tdrop-linux-amd64 bin/tdrop-windows-amd64.exe bin/tdrop-darwin-arm64 bin/tdrop-darwin-amd64 release/
           cp dist/TomorrowDrop-linux-amd64.deb dist/TomorrowDrop-windows-amd64.exe release/
           cd release && sha256sum * > SHA256SUMS && cat SHA256SUMS
       - name: Publish the release
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" release/* --title "$GITHUB_REF_NAME" --generate-notes
+        run: |
+          # The release text is docs/releases/<tag>.md when it exists; otherwise
+          # GitHub generates it from the commits since the previous tag.
+          notes="docs/releases/${GITHUB_REF_NAME}.md"
+          if [ -f "$notes" ]; then
+            gh release create "$GITHUB_REF_NAME" release/* --title "Tomorrow Drop $GITHUB_REF_NAME" --notes-file "$notes"
+          else
+            gh release create "$GITHUB_REF_NAME" release/* --title "Tomorrow Drop $GITHUB_REF_NAME" --generate-notes
+          fi

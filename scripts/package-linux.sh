@@ -8,7 +8,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 root="$PWD"
 image="fyneio/fyne-cross-images:linux"
-version="0.1.0"
+version="$(cat "$root/VERSION")"
 stage="$root/build/linux"
 
 fail() {

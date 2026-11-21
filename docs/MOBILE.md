@@ -5,7 +5,7 @@ Tasks 055 to 061 (block 07). This document records the requirements and what was
 ## Android build status
 
 - SDK installed with the `android` CLI into `~/Library/Android/sdk`: platform-tools 37.0.3, platform android-36, build-tools 36.0.0 and NDK 29.0.14206865. Java comes from Homebrew (`openjdk`), which the tools need.
-- `fyne package --target android` produces `dist/Tomorrow_Drop.apk`: package `org.tomorrowdrop.app`, version 0.1.0, minimum SDK 21, native libraries for arm64-v8a, armeabi-v7a, x86 and x86_64. The APK is signed by the Fyne tool with a debug certificate, so it installs on devices in developer mode. It is about 127 MB because it is a debug build; a release build needs a release keystore.
+- `fyne package --target android` produces `dist/Tomorrow_Drop.apk`: package `org.tomorrowdrop.app`, version 1.0.0, minimum SDK 21, native libraries for arm64-v8a, armeabi-v7a, x86 and x86_64. The APK is signed by the Fyne tool with a debug certificate, so it installs on devices in developer mode. It is about 127 MB because it is a debug build; a release build needs a release keystore.
 - The build found a real defect: a limit above 2 GiB passed to a formatting call overflowed on 32-bit ARM. The fix and the regression test `TestCoreBuildsOn32BitPlatforms` are in the repository.
 - Not run: the APK on an emulator or a device. No emulator is set up.
 

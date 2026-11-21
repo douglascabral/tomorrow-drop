@@ -20,7 +20,7 @@ rm -rf "Tomorrow Drop.app"
 	--icon "$root/assets/icon.png" \
 	--name "Tomorrow Drop" \
 	--app-id org.tomorrowdrop.app \
-	--app-version 0.1.0 \
+	--app-version "$(cat "$root/VERSION")" \
 	--app-build 1 \
 	--release
 

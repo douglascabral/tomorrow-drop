@@ -7,6 +7,7 @@
 GO        ?= go
 FUZZTIME  ?= 15s
 BIN       := bin
+VERSION   := $(shell cat VERSION)
 DIST      := dist
 CGO_OFF   := CGO_ENABLED=0
 DEV_HOME  ?= /tmp/tomorrow-drop-dev
@@ -38,10 +39,12 @@ gui: ## Build bin/tomorrow-drop (needs cgo and the graphics libraries)
 	@mkdir -p $(BIN)
 	$(GO) build -trimpath -o $(BIN)/tomorrow-drop ./cmd/tomorrow-drop
 
-cross: ## Cross-compile the CLI for Linux and Windows (amd64)
+cross: ## Cross-compile the CLI for Linux, Windows and macOS (amd64 and arm64)
 	@mkdir -p $(BIN)
-	GOOS=linux   GOARCH=amd64 $(CGO_OFF) $(GO) build -trimpath -o $(BIN)/tdrop-linux-amd64 ./cmd/tdrop
-	GOOS=windows GOARCH=amd64 $(CGO_OFF) $(GO) build -trimpath -o $(BIN)/tdrop-windows-amd64.exe ./cmd/tdrop
+	GOOS=linux   GOARCH=amd64 $(CGO_OFF) $(GO) build -trimpath -ldflags "-X main.version=$(VERSION)" -o $(BIN)/tdrop-linux-amd64 ./cmd/tdrop
+	GOOS=windows GOARCH=amd64 $(CGO_OFF) $(GO) build -trimpath -ldflags "-X main.version=$(VERSION)" -o $(BIN)/tdrop-windows-amd64.exe ./cmd/tdrop
+	GOOS=darwin  GOARCH=arm64 $(CGO_OFF) $(GO) build -trimpath -ldflags "-X main.version=$(VERSION)" -o $(BIN)/tdrop-darwin-arm64 ./cmd/tdrop
+	GOOS=darwin  GOARCH=amd64 $(CGO_OFF) $(GO) build -trimpath -ldflags "-X main.version=$(VERSION)" -o $(BIN)/tdrop-darwin-amd64 ./cmd/tdrop
 
 test: ## Run the test suite
 	$(GO) test ./...
