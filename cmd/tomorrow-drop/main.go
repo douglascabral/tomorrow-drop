@@ -61,7 +61,11 @@ func main() {
 
 	// Discovery and incoming transfers follow the window: foreground means
 	// available, background means not available (PRD §17.2, §18).
-	a.Lifecycle().SetOnEnteredForeground(func() { g.setAvailable(true) })
+	a.Lifecycle().SetOnEnteredForeground(func() {
+		g.setAvailable(true)
+		// Something shared from another app (Android) is taken when the app comes up.
+		g.background(g.takeShare)
+	})
 	a.Lifecycle().SetOnExitedForeground(func() { g.setAvailable(false) })
 
 	g.showHome()

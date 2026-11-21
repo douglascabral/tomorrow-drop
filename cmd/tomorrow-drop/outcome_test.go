@@ -37,6 +37,8 @@ func findImage(obj fyne.CanvasObject) *canvas.Image {
 		return o
 	case *container.Scroll:
 		return findImage(o.Content)
+	case *container.ThemeOverride:
+		return findImage(o.Content)
 	case *fyne.Container:
 		for _, c := range o.Objects {
 			if img := findImage(c); img != nil {

@@ -3,22 +3,17 @@
 package main
 
 /*
-#include <dlfcn.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <jni.h>
 
-// tdStaticString reads a static String field of a system class through JNI.
-// It returns NULL when the field cannot be read. Caller frees the result.
-static char *tdStaticString(JavaVM *vm, const char *cls, const char *field) {
-	JNIEnv *env = NULL;
-	int attached = 0;
-	if ((*vm)->GetEnv(vm, (void **)&env, JNI_VERSION_1_6) != JNI_OK) {
-		if ((*vm)->AttachCurrentThread(vm, &env, NULL) != JNI_OK) {
-			return NULL;
-		}
-		attached = 1;
-	}
+// tdBuildField reads a static String field of a system class (android.os.Build
+// and its VERSION class) through JNI. It returns NULL when the field cannot be
+// read. The caller frees the result. The environment comes from the application
+// (driver.RunNative), which is attached to the Java runtime.
+static char *tdBuildField(uintptr_t envp, const char *cls, const char *field) {
+	JNIEnv *env = (JNIEnv *)envp;
 	char *out = NULL;
 	jclass c = (*env)->FindClass(env, cls);
 	if (c != NULL) {
@@ -41,57 +36,45 @@ static char *tdStaticString(JavaVM *vm, const char *cls, const char *field) {
 		free(out);
 		out = NULL;
 	}
-	if (attached) {
-		(*vm)->DetachCurrentThread(vm);
-	}
 	return out;
 }
-
-// The NDK does not export JNI_GetCreatedJavaVMs to applications, but the
-// runtime that hosts the application provides it, so it is looked up at run time.
-typedef jint (*tdGetVMsFn)(JavaVM **, jsize, jsize *);
-
-static JavaVM *tdJavaVM(void) {
-	tdGetVMsFn get = (tdGetVMsFn)dlsym(RTLD_DEFAULT, "JNI_GetCreatedJavaVMs");
-	if (get == NULL) {
-		return NULL;
-	}
-	JavaVM *vm = NULL;
-	jsize n = 0;
-	if (get(&vm, 1, &n) != JNI_OK || n == 0) {
-		return NULL;
-	}
-	return vm;
-}
-
-// tdManufacturer, tdModel and tdRelease read android.os.Build fields.
-static char *tdManufacturer(void) { JavaVM *vm = tdJavaVM(); return vm ? tdStaticString(vm, "android/os/Build", "MANUFACTURER") : NULL; }
-static char *tdModel(void)        { JavaVM *vm = tdJavaVM(); return vm ? tdStaticString(vm, "android/os/Build", "MODEL") : NULL; }
-static char *tdRelease(void)      { JavaVM *vm = tdJavaVM(); return vm ? tdStaticString(vm, "android/os/Build$VERSION", "RELEASE") : NULL; }
 */
 import "C"
 
 import (
 	"strings"
 	"unsafe"
+
+	"fyne.io/fyne/v2/driver"
 )
 
 // devicePlatform returns the manufacturer and model, and the Android release.
 // Manufacturer and model are joined into the name, so the name reads
-// "samsung SM-S911B" and the system reads "Android 15".
+// "motorola moto g75 5G" and the system reads "Android 15".
 func devicePlatform() (string, string) {
-	manufacturer := readJava(C.tdManufacturer())
-	model := readJava(C.tdModel())
-	release := readJava(C.tdRelease())
-	name := strings.TrimSpace(manufacturer + " " + model)
+	var manufacturer, model, release string
+	_ = driver.RunNative(func(context any) error {
+		ac, ok := context.(*driver.AndroidContext)
+		if !ok {
+			return nil
+		}
+		manufacturer = buildField(ac.Env, "android/os/Build", "MANUFACTURER")
+		model = buildField(ac.Env, "android/os/Build", "MODEL")
+		release = buildField(ac.Env, "android/os/Build$VERSION", "RELEASE")
+		return nil
+	})
 	system := ""
 	if release != "" {
 		system = "Android " + release
 	}
-	return name, system
+	return strings.TrimSpace(manufacturer + " " + model), system
 }
 
-func readJava(p *C.char) string {
+func buildField(env uintptr, class, field string) string {
+	cls, fld := C.CString(class), C.CString(field)
+	defer C.free(unsafe.Pointer(cls))
+	defer C.free(unsafe.Pointer(fld))
+	p := C.tdBuildField(C.uintptr_t(env), cls, fld)
 	if p == nil {
 		return ""
 	}

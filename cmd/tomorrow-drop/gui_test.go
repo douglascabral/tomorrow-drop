@@ -38,6 +38,12 @@ func newTestGUI(t *testing.T) *gui {
 	}
 	g.app = test.NewApp()
 	g.win = g.app.NewWindow("test")
+	// Goroutines started by a tap may still be laying out the screen when the
+	// test body ends; stop them and wait, so they do not overlap the next test.
+	t.Cleanup(func() {
+		cancel()
+		g.bg.Wait()
+	})
 	return g
 }
 
@@ -191,8 +197,15 @@ func TestDeviceRowFillsItsOwnLabels(t *testing.T) {
 	item := g.newDeviceRow()
 	g.fillDeviceRow(item, ui.DeviceRow{Name: "MacBook", Address: "192.168.1.42:47521", StatusKey: "ui.status.trusted", Trusted: true})
 	parts := g.rowParts[item]
-	if parts == nil || parts.name.Text != "MacBook" || parts.address.Text != "192.168.1.42:47521" {
+	// The usual port is the same for every device, so the row shows the address only.
+	if parts == nil || parts.name.Text != "MacBook" || parts.address.Text != "192.168.1.42" {
 		t.Fatalf("row labels not filled: %+v", parts)
+	}
+
+	// Another port is kept, because it tells the devices apart.
+	g.fillDeviceRow(item, ui.DeviceRow{Name: "MacBook", Address: "192.168.1.42:50000", StatusKey: "ui.status.trusted", Trusted: true})
+	if got := g.rowParts[item].address.Text; got != "192.168.1.42:50000" {
+		t.Fatalf("address with another port = %q, want it kept", got)
 	}
 }
 

@@ -49,3 +49,20 @@ func pickerSize(win fyne.Size) fyne.Size {
 	const share = 0.9
 	return fyne.NewSize(win.Width*share, win.Height*share)
 }
+
+// droppedPaths keeps the regular files among the items dropped on the window.
+// Folders, missing files and addresses that are not files are ignored.
+func droppedPaths(uris []fyne.URI) []string {
+	var paths []string
+	for _, u := range uris {
+		if u.Scheme() != "file" {
+			continue
+		}
+		info, err := os.Stat(u.Path())
+		if err != nil || !info.Mode().IsRegular() {
+			continue
+		}
+		paths = append(paths, u.Path())
+	}
+	return paths
+}

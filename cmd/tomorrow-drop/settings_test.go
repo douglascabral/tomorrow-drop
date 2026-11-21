@@ -13,9 +13,9 @@ import (
 // the current language must not save or notify anything.
 func TestLanguagePickerShowsCurrentLanguageWithoutSaving(t *testing.T) {
 	saved := false
-	picker := languagePicker("en", func(string) { saved = true })
-	if picker.Selected != "en" {
-		t.Fatalf("picker shows %q, want the current language en", picker.Selected)
+	picker := languagePicker("en", "Automatic", func(string) { saved = true })
+	if picker.Selected != "English" {
+		t.Fatalf("picker shows %q, want the current language English", picker.Selected)
 	}
 	if saved {
 		t.Fatalf("showing the current language saved or notified")
@@ -25,8 +25,8 @@ func TestLanguagePickerShowsCurrentLanguageWithoutSaving(t *testing.T) {
 // Choosing another language still saves it.
 func TestLanguagePickerSavesAChoice(t *testing.T) {
 	var got string
-	picker := languagePicker("auto", func(c string) { got = c })
-	picker.SetSelected("pt-BR")
+	picker := languagePicker("auto", "Automatic", func(c string) { got = c })
+	picker.SetSelected("Português (Brasil)")
 	if got != "pt-BR" {
 		t.Fatalf("choice = %q, want pt-BR", got)
 	}
@@ -54,6 +54,8 @@ func findLabel(obj fyne.CanvasObject, text string) *widget.Label {
 			return o
 		}
 	case *container.Scroll:
+		return findLabel(o.Content, text)
+	case *container.ThemeOverride:
 		return findLabel(o.Content, text)
 	case *fyne.Container:
 		for _, c := range o.Objects {

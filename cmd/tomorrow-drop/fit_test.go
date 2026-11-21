@@ -65,7 +65,7 @@ func containsPlaceholder(s string) bool {
 }
 
 // Regression: the status of a device row is one short word on the right; it
-// must not wrap, or it shows a single letter. The name wraps.
+// must not wrap, or it shows a single letter.
 func TestDeviceRowStatusStaysOnOneLine(t *testing.T) {
 	g := newTestGUI(t)
 	row := g.newDeviceRow()
@@ -76,7 +76,9 @@ func TestDeviceRowStatusStaysOnOneLine(t *testing.T) {
 	if parts.status.Wrapping != fyne.TextWrapOff {
 		t.Fatalf("status wrapping = %v, want TextWrapOff", parts.status.Wrapping)
 	}
-	if parts.name.Wrapping != fyne.TextWrapWord {
-		t.Fatalf("name wrapping = %v, want TextWrapWord", parts.name.Wrapping)
+	// The name is cut with an ellipsis rather than wrapped, so the row keeps its
+	// height (TestRowAndFileNamesAreTruncatedNotWrapped).
+	if parts.name.Wrapping != fyne.TextWrapOff {
+		t.Fatalf("name wrapping = %v, want TextWrapOff", parts.name.Wrapping)
 	}
 }

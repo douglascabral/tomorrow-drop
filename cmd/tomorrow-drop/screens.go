@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"image/color"
@@ -15,11 +16,11 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"tomorrow-drop/internal/apperr"
+	"tomorrow-drop/internal/limits"
 	"tomorrow-drop/internal/protocol"
 	"tomorrow-drop/internal/settings"
 	"tomorrow-drop/internal/transfer"
@@ -29,9 +30,14 @@ import (
 
 // header is the top bar of a sub-screen: back button and title.
 func (g *gui) header(title string) fyne.CanvasObject {
-	back := widget.NewButtonWithIcon("", theme.NavigateBackIcon(), g.showHome)
+	return g.headerWith(title, g.showHome)
+}
+
+// headerWith is header with its own action for the back button.
+func (g *gui) headerWith(title string, onBack func()) fyne.CanvasObject {
+	back := widget.NewButtonWithIcon("", theme.NavigateBackIcon(), onBack)
 	name := newLabelStyled(title, fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
-	return container.NewBorder(nil, nil, back, nil, name)
+	return container.NewBorder(nil, nil, back, nil, container.NewCenter(g.compact(name)))
 }
 
 // card wraps content in a rounded-looking surface.
@@ -44,7 +50,10 @@ func card(objs ...fyne.CanvasObject) fyne.CanvasObject {
 // showFull puts a screen in the window without the centered column: it uses
 // the whole window, for screens that grow with it.
 func (g *gui) showFull(content fyne.CanvasObject) {
-	g.onUI(func() { g.win.SetContent(content) })
+	g.onUI(func() {
+		g.win.SetOnDropped(nil)
+		g.win.SetContent(content)
+	})
 }
 
 // show puts a screen in the window. On desktop the screen is a centered column
@@ -53,7 +62,10 @@ func (g *gui) show(content fyne.CanvasObject) {
 	if !g.mobile {
 		content = container.New(&maxWidthLayout{max: maxColumnWidth}, content)
 	}
-	g.onUI(func() { g.win.SetContent(content) })
+	g.onUI(func() {
+		g.win.SetOnDropped(nil)
+		g.win.SetContent(content)
+	})
 }
 
 // scroll puts a screen in a scroller, so small windows never cut content.
@@ -94,23 +106,106 @@ func (g *gui) showHome() {
 	settingsBtn := widget.NewButtonWithIcon(g.tr.T("gui.home.settings"), theme.SettingsIcon(), g.showSettings)
 	settingsBtn.Importance = widget.LowImportance
 
-	head := container.NewVBox(
-		container.NewCenter(logoImage(96)),
-		newLabelStyled(g.tr.T("app.nome"), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
-		newLabelStyled(g.tr.T("app.slogan"), fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
-		thisDevice,
-		container.NewBorder(nil, nil, nil, refresh, newLabelStyled(g.tr.T("gui.home.devices"), fyne.TextAlignLeading, fyne.TextStyle{Bold: true})),
-	)
+	// This device's fingerprint sits under its address, always at hand: it is what
+	// the other person compares when pairing. A tap shows the whole of it.
+	fingerprint := g.fingerprintButton()
+	devicesTitle := newLabelStyled(g.tr.T("gui.home.devices"), fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+	headItems := []fyne.CanvasObject{}
+	if g.sharedWaiting() {
+		g.pendingMu.Lock()
+		headItems = append(headItems, g.shareBanner(g.share))
+		g.pendingMu.Unlock()
+	}
+	head := container.NewVBox(append(headItems,
+		g.compact(container.NewVBox(
+			container.NewCenter(logoImage(g.logoSize())),
+			newLabelStyled(g.tr.T("app.nome"), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+			newLabelStyled(g.tr.T("app.slogan"), fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
+			thisDevice,
+		)),
+		fingerprint,
+		container.NewBorder(nil, nil, nil, refresh, g.compact(devicesTitle)),
+	)...)
 	foot := container.NewVBox(manual, settingsBtn)
-	g.show(container.NewBorder(container.NewPadded(head), container.NewPadded(foot), nil, nil, list))
+	// With no device the list is not blank: it says it is looking, and what to do.
+	hint := newLabelStyled(g.tr.T("gui.home.empty_hint"), fyne.TextAlignCenter, fyne.TextStyle{})
+	hint.Importance = widget.LowImportance
+	g.emptyHint = container.NewVBox(
+		g.compact(newLabelStyled(g.tr.T("gui.home.empty_title"), fyne.TextAlignCenter, fyne.TextStyle{Bold: true})),
+		hint,
+	)
+	if len(g.rows) > 0 {
+		g.emptyHint.Hide()
+	}
+	middle := container.NewStack(list, container.NewBorder(container.NewPadded(g.emptyHint), nil, nil, nil))
+	g.show(container.NewBorder(container.NewPadded(head), container.NewPadded(foot), nil, nil, middle))
+}
+
+// fingerprintButton opens the whole of this device's fingerprint. It shows no
+// part of it: seeing only the start would invite people to compare only the start.
+func (g *gui) fingerprintButton() *widget.Button {
+	b := widget.NewButtonWithIcon(g.tr.T("gui.fingerprint.view"), theme.VisibilityIcon(), g.showFingerprint)
+	b.Importance = widget.LowImportance
+	return b
+}
+
+// fingerprintContent is what the fingerprint view shows: the whole fingerprint,
+// in four short lines, with a button to copy it.
+func (g *gui) fingerprintContent() fyne.CanvasObject {
+	grouped := g.id.Fingerprint().Grouped()
+	copyBtn := widget.NewButtonWithIcon(g.tr.T("gui.receive.copy"), theme.ContentCopyIcon(), func() {
+		g.app.Clipboard().SetContent(grouped)
+	})
+	return container.NewVBox(
+		newLabel(g.tr.T("gui.fingerprint.hint")),
+		newLabelStyled(ui.FingerprintBlock(grouped), fyne.TextAlignLeading, fyne.TextStyle{Monospace: true}),
+		copyBtn,
+	)
+}
+
+// showFingerprint shows this device's whole fingerprint.
+func (g *gui) showFingerprint() {
+	g.onUI(func() {
+		dialog.NewCustom(g.tr.T("gui.fingerprint.title"), g.tr.T("gui.close"), g.fingerprintContent(), g.win).Show()
+	})
+}
+
+// logoSize is the size of the logo on the home screen: smaller on a phone, so
+// the list gets the room.
+func (g *gui) logoSize() float32 {
+	if g.mobile {
+		return 64
+	}
+	return 96
 }
 
 // refreshDevices rebuilds the device list from the ephemeral registry (task 022).
 func (g *gui) refreshDevices() {
-	g.rows = ui.DeviceRows(g.reg.List(time.Now()))
+	devices := g.reg.List(time.Now())
+	for i := range devices {
+		// A device already shown by an authenticated connection keeps its paired
+		// name, not the computer name it announces.
+		// The name comes from the paired record, so the list reads the current name
+		// at once. Trust is not shown until a connection proves it.
+		if name, ok := g.pairedNameAt(devices[i].Addr); ok {
+			devices[i].Name = name
+		}
+		if p, ok := g.pairedAt(devices[i].Addr); ok {
+			devices[i].Name = p.Name
+			devices[i].Trusted = true
+		}
+	}
+	g.rows = ui.DeviceRows(devices)
 	g.onUI(func() {
 		if g.devicesList != nil {
 			g.devicesList.Refresh()
+		}
+		if g.emptyHint != nil {
+			if len(g.rows) == 0 {
+				g.emptyHint.Show()
+			} else {
+				g.emptyHint.Hide()
+			}
 		}
 	})
 }
@@ -125,8 +220,12 @@ type deviceRowParts struct {
 // newDeviceRow builds one device line: name and address on the left, status on
 // the right (layout 1). It records the labels for fillDeviceRow.
 func (g *gui) newDeviceRow() fyne.CanvasObject {
-	parts := &deviceRowParts{icon: widget.NewIcon(nil), name: newLabel(""), address: newLabel(""), status: widget.NewLabel("")}
-	root := container.NewBorder(nil, nil, parts.icon, parts.status, container.NewVBox(parts.name, parts.address))
+	parts := &deviceRowParts{icon: widget.NewIcon(nil), name: newNameLabel(""), address: newNameLabel(""), status: widget.NewLabel("")}
+	inner := container.NewBorder(nil, nil, parts.icon, parts.status, container.NewVBox(parts.name, parts.address))
+	// The text is compact, and the row keeps a height that is easy to tap.
+	spacer := canvas.NewRectangle(color.Transparent)
+	spacer.SetMinSize(fyne.NewSize(0, 72))
+	root := container.NewStack(spacer, container.NewPadded(g.compact(inner)))
 	g.rowParts[root] = parts
 	return root
 }
@@ -138,7 +237,7 @@ func (g *gui) fillDeviceRow(obj fyne.CanvasObject, row ui.DeviceRow) {
 		return
 	}
 	parts.name.SetText(row.Name)
-	parts.address.SetText(row.Address)
+	parts.address.SetText(hostOf(row.Address))
 	parts.status.SetText(g.tr.T(row.StatusKey))
 	// The row was laid out before its texts were known; lay it out again so the
 	// status gets its full width.
@@ -156,6 +255,11 @@ func (g *gui) fillDeviceRow(obj fyne.CanvasObject, row ui.DeviceRow) {
 
 // openDevice opens a trusted device (layout 5) or starts pairing with a new one (layout 2).
 func (g *gui) openDevice(row ui.DeviceRow) {
+	// Something another app shared waits for a device: a paired one gets it now.
+	if row.Trusted && g.sharedWaiting() {
+		g.sendShared(row.Address)
+		return
+	}
 	if row.Trusted {
 		g.showTrustedDevice(row)
 		return
@@ -163,92 +267,82 @@ func (g *gui) openDevice(row ui.DeviceRow) {
 	g.connectTo(row)
 }
 
-// showTrustedDevice is the paired-device screen: actions and identity (layout 5).
+// showTrustedDevice is the paired-device screen: actions first, identity below
+// (layout 5). Unpairing is a quiet action at the end, since it is rare and the
+// people have to pair again.
 func (g *gui) showTrustedDevice(row ui.DeviceRow) {
 	fp, pairedAt := g.peerDetails(row.Address)
-	name := newLabelStyled(row.Name, fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
-	addr := newLabelStyled(row.Address, fyne.TextAlignCenter, fyne.TextStyle{})
+	icon := canvas.NewImageFromResource(theme.ComputerIcon())
+	icon.SetMinSize(fyne.NewSize(56, 56))
+	icon.FillMode = canvas.ImageFillContain
+	name := newNameLabel(row.Name)
+	name.Alignment, name.TextStyle = fyne.TextAlignCenter, fyne.TextStyle{Bold: true}
+	addr := newNameLabel(hostOf(row.Address))
+	addr.Alignment, addr.TextStyle = fyne.TextAlignCenter, fyne.TextStyle{Monospace: true}
+	addr.Importance = widget.LowImportance
 	badge := newLabelStyled(g.tr.T("ui.status.trusted"), fyne.TextAlignCenter, fyne.TextStyle{})
 	badge.Importance = widget.SuccessImportance
 
-	details := card(
-		newLabel(g.tr.T("gui.device.paired_at", pairedAt)),
-		newLabel(g.tr.T("gui.device.fingerprint")),
-		newLabelStyled(fp, fyne.TextAlignLeading, fyne.TextStyle{Monospace: true}),
-	)
 	sendFiles := widget.NewButtonWithIcon(g.tr.T("gui.device.send_files"), theme.UploadIcon(), func() { g.showSend(row.Address, false) })
 	sendFiles.Importance = widget.HighImportance
 	sendText := widget.NewButtonWithIcon(g.tr.T("gui.device.send_text"), theme.DocumentIcon(), func() { g.showSend(row.Address, true) })
+	sendClipboard := widget.NewButtonWithIcon(g.tr.T("gui.send.clipboard"), theme.ContentPasteIcon(), func() {
+		g.previewClipboard(func(spec transfer.SendSpec) {
+			g.startSend(row.Address, spec, g.tr.T("gui.send.clipboard"))
+		})
+	})
 	receive := widget.NewButtonWithIcon(g.tr.T("gui.home.receive"), theme.DownloadIcon(), g.showReceive)
-	remove := widget.NewButtonWithIcon(g.tr.T("gui.trusted.remove"), theme.DeleteIcon(), func() { g.removeTrustByAddress(row.Address) })
-	remove.Importance = widget.DangerImportance
+
+	details := card(g.compact(container.NewVBox(
+		newLabel(g.tr.T("gui.device.paired_at", pairedAt)),
+		newLabel(g.tr.T("gui.device.fingerprint")),
+		newLabelStyled(ui.FingerprintBlock(fp), fyne.TextAlignLeading, fyne.TextStyle{Monospace: true}),
+	)))
+	remove := widget.NewButtonWithIcon(g.tr.T("gui.trusted.remove"), theme.DeleteIcon(), func() {
+		ep, err := manualEndpoint(row.Address)
+		if err != nil {
+			return
+		}
+		if peer, ok := g.pairedAt(ep); ok {
+			g.confirmUnpair(peer, g.showHome)
+		}
+	})
+	remove.Importance = widget.LowImportance
+	rename := widget.NewButtonWithIcon(g.tr.T("gui.trusted.rename"), theme.DocumentCreateIcon(), func() {
+		ep, err := manualEndpoint(row.Address)
+		if err != nil {
+			return
+		}
+		if peer, ok := g.pairedAt(ep); ok {
+			g.askRename(peer)
+		}
+	})
+	rename.Importance = widget.LowImportance
 
 	body := container.NewVBox(
-		container.NewCenter(canvas.NewImageFromResource(theme.ComputerIcon())),
-		name, addr, container.NewCenter(badge),
+		container.NewCenter(icon),
+		g.compact(container.NewVBox(name, addr)),
+		g.fingerprintButton(),
+		g.compact(container.NewCenter(badge)),
+		sendFiles, sendText, sendClipboard, receive,
 		details,
-		sendFiles, sendText, receive, remove,
+		rename,
+		remove,
 	)
 	g.show(container.NewBorder(g.header(g.tr.T("gui.device.title")), nil, nil, nil, scroll(body)))
 }
 
-// peerDetails returns the fingerprint and pairing date of the trusted device at addr.
+// peerDetails returns the fingerprint and pairing date of the paired device at addr.
 func (g *gui) peerDetails(addr string) (string, string) {
-	peers, err := g.store.List()
-	if err != nil {
-		return "", ""
-	}
 	ep, err := manualEndpoint(addr)
 	if err != nil {
-		return "", ""
+		return "—", "—"
 	}
-	for _, d := range g.reg.List(time.Now()) {
-		if d.Addr == ep {
-			for _, p := range peers {
-				if p.Name == d.Name {
-					return p.Fingerprint.Grouped(), p.AddedAt.Local().Format("02/01/2006 15:04")
-				}
-			}
-		}
+	p, ok := g.pairedAt(ep)
+	if !ok {
+		return "—", "—"
 	}
-	return "—", "—"
-}
-
-// removeTrustByAddress revokes trust in the device at addr after confirmation.
-func (g *gui) removeTrustByAddress(addr string) {
-	peers, err := g.store.List()
-	if err != nil {
-		g.notify(g.tr.T("gui.trusted.title"), g.tr.T(apperr.MessageKey(err)))
-		return
-	}
-	ep, err := manualEndpoint(addr)
-	if err != nil {
-		return
-	}
-	for _, d := range g.reg.List(time.Now()) {
-		if d.Addr != ep {
-			continue
-		}
-		for _, p := range peers {
-			if p.Name != d.Name {
-				continue
-			}
-			peer := p
-			g.onUI(func() {
-				dialog.ShowConfirm(g.tr.T("gui.trusted.remove"), g.tr.T("gui.trusted.remove_confirm", peer.Name), func(ok bool) {
-					if !ok {
-						return
-					}
-					if err := g.store.Remove(peer.Fingerprint); err != nil {
-						g.notify(g.tr.T("gui.trusted.title"), g.tr.T(apperr.MessageKey(err)))
-						return
-					}
-					g.showHome()
-				}, g.win)
-			})
-			return
-		}
-	}
+	return p.Fingerprint.Grouped(), p.AddedAt.Local().Format("02/01/2006 15:04")
 }
 
 // showManual is the manual pairing screen: IP address and port (layout 4).
@@ -257,23 +351,27 @@ func (g *gui) showManual() {
 	ip.SetPlaceHolder("192.168.1.42")
 	port := widget.NewEntry()
 	port.SetText(strconv.Itoa(defaultTLSPort))
-	connect := widget.NewButtonWithIcon(g.tr.T("gui.home.connect"), theme.ConfirmIcon(), func() {
-		ep, err := manualEndpoint(ip.Text + ":" + strings.TrimSpace(port.Text))
+	connect := func() {
+		ep, err := manualEndpoint(strings.TrimSpace(ip.Text) + ":" + strings.TrimSpace(port.Text))
 		if err != nil {
 			g.notify(g.tr.T("gui.home.manual"), g.tr.T(apperr.MessageKey(err)))
 			return
 		}
 		g.connectTo(ui.DeviceRow{Name: ep.String(), Address: ep.String(), StatusKey: "ui.status.discovered"})
-	})
-	connect.Importance = widget.HighImportance
+	}
+	// Enter connects from either field.
+	ip.OnSubmitted = func(string) { connect() }
+	port.OnSubmitted = func(string) { connect() }
+	connectBtn := widget.NewButtonWithIcon(g.tr.T("gui.home.connect"), theme.ConfirmIcon(), connect)
+	connectBtn.Importance = widget.HighImportance
 	body := card(
-		newLabelStyled(g.tr.T("gui.manual.title"), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
 		newLabelStyled(g.tr.T("gui.manual.help"), fyne.TextAlignCenter, fyne.TextStyle{}),
-		newLabel(g.tr.T("gui.manual.ip")), ip,
-		newLabel(g.tr.T("gui.manual.port")), port,
-		connect,
+		g.compact(newLabel(g.tr.T("gui.manual.ip"))), ip,
+		g.compact(newLabel(g.tr.T("gui.manual.port"))), port,
+		connectBtn,
 	)
-	g.show(container.NewBorder(g.header(g.tr.T("gui.manual.title")), nil, nil, nil, scroll(body)))
+	// The card keeps its natural height instead of filling the screen.
+	g.show(container.NewBorder(g.header(g.tr.T("gui.manual.title")), nil, nil, nil, scroll(container.NewVBox(body))))
 }
 
 // showSend is the send screen (layout 6): choose files or write text, then send.
@@ -286,8 +384,15 @@ func (g *gui) showSend(target string, textMode bool) {
 	text := widget.NewMultiLineEntry()
 	text.SetPlaceHolder(g.tr.T("gui.send.text_placeholder"))
 
+	// updateSend enables Send only when there is a recipient and something to send.
+	var updateSend func()
 	var refreshFiles func()
 	refreshFiles = func() {
+		defer func() {
+			if updateSend != nil {
+				updateSend()
+			}
+		}()
 		fileList.Objects = nil
 		var total int64
 		for i, f := range files {
@@ -300,10 +405,10 @@ func (g *gui) showSend(target string, textMode bool) {
 			})
 			remove.Importance = widget.LowImportance
 			fileList.Add(card(container.NewBorder(nil, nil, widget.NewIcon(theme.DocumentIcon()), remove,
-				container.NewVBox(newLabel(filepath.Base(f)), newLabel(ui.FormatBytes(info))))))
+				g.compact(container.NewVBox(newNameLabel(filepath.Base(f)), newLabel(ui.FormatBytes(info)))))))
 		}
 		if len(files) > 0 {
-			summary.SetText(g.tr.T("gui.send.summary", len(files), ui.FormatBytes(total)))
+			summary.SetText(g.tr.T("gui.send.summary", g.countFiles(len(files)), ui.FormatBytes(total)))
 		} else {
 			summary.SetText(g.tr.T("gui.send.no_files"))
 		}
@@ -339,20 +444,31 @@ func (g *gui) showSend(target string, textMode bool) {
 	dest := widget.NewEntry()
 	dest.SetPlaceHolder(g.tr.T("gui.send.target_placeholder"))
 	dest.SetText(target)
-	destLine := newLabel(g.tr.T("gui.send.to", target))
+	destLine := newNameLabel(g.tr.T("gui.send.to", g.displayName(target)))
 	if target == "" {
 		destLine.Hide()
 	} else {
 		dest.Hide()
 	}
 
-	// On a phone the send action is a labeled button across the screen; on
-	// desktop it is a compact icon next to the summary.
-	sendBtn := widget.NewButtonWithIcon("", theme.MailSendIcon(), nil)
-	if g.mobile {
-		sendBtn = widget.NewButtonWithIcon(g.tr.T("gui.send.send"), theme.MailSendIcon(), nil)
-	}
+	// The send action always says what it does; on a phone it spans the screen.
+	sendBtn := widget.NewButtonWithIcon(g.tr.T("gui.send.send"), theme.MailSendIcon(), nil)
 	sendBtn.Importance = widget.HighImportance
+	updateSend = func() {
+		ready := strings.TrimSpace(dest.Text) != ""
+		if textMode {
+			ready = ready && strings.TrimSpace(text.Text) != ""
+		} else {
+			ready = ready && len(files) > 0
+		}
+		if ready {
+			sendBtn.Enable()
+		} else {
+			sendBtn.Disable()
+		}
+	}
+	text.OnChanged = func(string) { updateSend() }
+	dest.OnChanged = func(string) { updateSend() }
 	sendBtn.OnTapped = func() {
 		if strings.TrimSpace(dest.Text) == "" {
 			status.SetText(g.tr.T("gui.send.need_target"))
@@ -394,6 +510,7 @@ func (g *gui) showSend(target string, textMode bool) {
 		})
 	})
 	refreshFiles()
+	updateSend()
 	title := g.tr.T("gui.send.title")
 	if textMode {
 		title = g.tr.T("gui.send.text_title")
@@ -404,6 +521,18 @@ func (g *gui) showSend(target string, textMode bool) {
 	}
 	g.showFull(container.NewBorder(g.header(title), nil, nil, nil,
 		g.sendDesktopBody(textMode, destLine, dest, target, text, pick, fileList, summary, sendBtn, status, clipboard, hint)))
+	if !textMode {
+		// Files can be dropped on the window. It is queued after the screen
+		// change, which clears the previous screen's handler.
+		g.onUI(func() {
+			g.win.SetOnDropped(func(_ fyne.Position, uris []fyne.URI) {
+				if added := droppedPaths(uris); len(added) > 0 {
+					files = append(files, added...)
+					refreshFiles()
+				}
+			})
+		})
+	}
 }
 
 // sendPhoneBody stacks the send screen for a phone; it scrolls as a whole.
@@ -415,9 +544,9 @@ func (g *gui) sendPhoneBody(textMode bool, destLine *widget.Label, dest *widget.
 	}
 	return container.NewVBox(
 		targetRow(g, destLine, dest, target),
-		card(newLabelStyled(hint, fyne.TextAlignCenter, fyne.TextStyle{}), container.NewCenter(pick)),
+		dropCard(newLabelStyled(hint, fyne.TextAlignCenter, fyne.TextStyle{}), pick),
 		fileList,
-		summary,
+		g.compact(summary),
 		g.sendRow(sendBtn, status),
 		clipboard,
 	)
@@ -435,8 +564,7 @@ func (g *gui) sendDesktopBody(textMode bool, destLine *widget.Label, dest *widge
 		return container.NewBorder(top, bottom, nil, nil, card(text))
 	}
 	// The button keeps its own height: a centered box would stretch with the area.
-	dropArea := card(newLabelStyled(hint, fyne.TextAlignCenter, fyne.TextStyle{}),
-		container.NewHBox(layout.NewSpacer(), pick, layout.NewSpacer()))
+	dropArea := dropCard(newLabelStyled(hint, fyne.TextAlignCenter, fyne.TextStyle{}), pick)
 	files := container.NewBorder(container.NewVBox(top, dropArea), nil, nil, nil, container.NewScroll(fileList))
 	bottom := container.NewVBox(container.NewBorder(nil, nil, nil, sendBtn, summary), status, clipboard)
 	return container.NewBorder(nil, bottom, nil, nil, files)
@@ -455,9 +583,9 @@ func (g *gui) sendRow(sendBtn *widget.Button, status *widget.Label) fyne.CanvasO
 // input when the send starts from the home screen.
 func targetRow(g *gui, line *widget.Label, input *widget.Entry, target string) fyne.CanvasObject {
 	if target != "" {
-		return card(line)
+		return card(g.compact(line))
 	}
-	return container.NewVBox(newLabel(g.tr.T("gui.send.target")), input)
+	return container.NewVBox(g.compact(newLabel(g.tr.T("gui.send.target"))), input)
 }
 
 func firstOr(files []string, fallback string) string {
@@ -478,7 +606,7 @@ func statSize(path string) (int64, error) {
 // startSend runs one send and shows the progress screen (layout 7).
 func (g *gui) startSend(dest string, spec transfer.SendSpec, label string) {
 	ctx, done := g.beginOperation()
-	title := g.tr.T("gui.progress.sending_to", dest)
+	title := g.tr.T("gui.progress.sending_to", g.displayName(dest))
 	meter := newMeter(g, title, g.tr.T("gui.progress.preparing"), func() { done() })
 	g.show(meter.screen)
 	sendAgain := doneAction{label: g.tr.T("gui.done.send_again"), run: func() {
@@ -498,7 +626,7 @@ func (g *gui) startSend(dest string, spec transfer.SendSpec, label string) {
 			g.showOutcome(false, g.tr.T("gui.send.failed"), g.tr.T(apperr.MessageKey(err)), nil, sendAgain)
 			return
 		}
-		g.showCompleted(g.tr.T("gui.send.done"), g.tr.T("gui.send.sent_to", dest), nil, sendAgain)
+		g.showCompleted(g.tr.T("gui.send.done"), g.tr.T("gui.send.sent_to", g.displayName(dest)), nil, sendAgain)
 	}()
 }
 
@@ -520,14 +648,15 @@ func newMeter(g *gui, title, subtitle string, cancel func()) *meter {
 	m.ring.SetMinSize(fyne.NewSize(220, 220))
 	m.ring.FillMode = canvas.ImageFillContain
 	m.percent = newLabelStyled("0%", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
-	m.file = newLabelStyled(subtitle, fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	m.file = newNameLabel(subtitle)
+	m.file.Alignment, m.file.TextStyle = fyne.TextAlignCenter, fyne.TextStyle{Bold: true}
 	m.detail = newLabelStyled("", fyne.TextAlignCenter, fyne.TextStyle{})
 	m.rate = newLabelStyled("", fyne.TextAlignCenter, fyne.TextStyle{})
 	cancelBtn := widget.NewButtonWithIcon(g.tr.T("gui.send.cancel"), theme.CancelIcon(), cancel)
 	cancelBtn.Importance = widget.MediumImportance
 	ringBox := container.NewStack(m.ring, container.NewCenter(m.percent))
 	m.screen = container.NewBorder(g.header(title), container.NewPadded(cancelBtn), nil, nil,
-		scroll(container.NewVBox(container.NewCenter(ringBox), m.file, m.detail, m.rate)))
+		scroll(container.NewVBox(container.NewCenter(ringBox), g.compact(container.NewVBox(m.file, m.detail, m.rate)))))
 	return m
 }
 
@@ -562,9 +691,8 @@ func (g *gui) showReceive() {
 	icon := canvas.NewImageFromResource(theme.DownloadIcon())
 	icon.SetMinSize(fyne.NewSize(72, 72))
 	info := card(
-		newLabelStyled(g.tr.T("gui.receive.waiting_title"), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+		g.compact(newLabelStyled(g.tr.T("gui.receive.waiting_title"), fyne.TextAlignCenter, fyne.TextStyle{Bold: true})),
 		newLabelStyled(g.tr.T("gui.receive.waiting_text"), fyne.TextAlignCenter, fyne.TextStyle{}),
-		newLabelStyled(g.tr.T("gui.receive.port", g.tlsPort), fyne.TextAlignCenter, fyne.TextStyle{Monospace: true}),
 	)
 	hint := newLabelStyled(g.tr.T("gui.receive.auto_hint"), fyne.TextAlignCenter, fyne.TextStyle{Italic: true})
 	body := container.NewVBox(container.NewCenter(icon), info, hint)
@@ -595,16 +723,19 @@ func (g *gui) showOutcome(ok bool, title, subtitle string, files []string, next 
 	mark.SetMinSize(fyne.NewSize(72, 72))
 	items := container.NewVBox()
 	for _, f := range files {
-		items.Add(newLabel(filepath.Base(f)))
+		items.Add(newNameLabel(filepath.Base(f)))
 	}
 	body := []fyne.CanvasObject{container.NewCenter(mark),
-		newLabelStyled(title, fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+		g.compact(newLabelStyled(title, fyne.TextAlignCenter, fyne.TextStyle{Bold: true})),
 		newLabelStyled(subtitle, fyne.TextAlignCenter, fyne.TextStyle{})}
 	if len(files) > 0 {
-		body = append(body, card(items))
-		open := widget.NewButtonWithIcon(g.tr.T("gui.done.open_folder"), theme.FolderOpenIcon(), func() { g.openFolder(filepath.Dir(files[0])) })
-		open.Importance = widget.HighImportance
-		body = append(body, open)
+		body = append(body, card(g.compact(items)))
+		// A phone has no folder to open: the files were saved where the person chose.
+		if !g.mobile {
+			open := widget.NewButtonWithIcon(g.tr.T("gui.done.open_folder"), theme.FolderOpenIcon(), func() { g.openFolder(filepath.Dir(files[0])) })
+			open.Importance = widget.HighImportance
+			body = append(body, open)
+		}
 	}
 	for _, a := range next {
 		body = append(body, widget.NewButton(a.label, a.run))
@@ -621,33 +752,41 @@ func (g *gui) openFolder(dir string) {
 	_ = g.app.OpenURL(u)
 }
 
-// showTrusted lists trusted devices with their full fingerprint (task 048).
+// showTrusted lists the paired devices. Each one can be unpaired from here, so
+// it does not depend on the device being online.
 func (g *gui) showTrusted() {
 	peers, err := g.store.List()
 	if err != nil {
 		g.notify(g.tr.T("gui.trusted.title"), g.tr.T(apperr.MessageKey(err)))
 		return
 	}
-	rows := ui.TrustedRows(peers)
-	items := make([]fyne.CanvasObject, 0, len(rows))
-	for i := range rows {
-		row := rows[i]
-		items = append(items, card(newLabelStyled(row.Name, fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-			newLabelStyled(row.Fingerprint, fyne.TextAlignLeading, fyne.TextStyle{Monospace: true})))
+	items := make([]fyne.CanvasObject, 0, len(peers))
+	for i := range peers {
+		peer := peers[i]
+		remove := widget.NewButtonWithIcon(g.tr.T("gui.trusted.remove"), theme.DeleteIcon(), func() { g.confirmUnpair(peer, g.showTrusted) })
+		remove.Importance = widget.LowImportance
+		rename := widget.NewButtonWithIcon(g.tr.T("gui.trusted.rename"), theme.DocumentCreateIcon(), func() { g.askRename(peer) })
+		rename.Importance = widget.LowImportance
+		fingerprint := newLabelStyled(ui.FingerprintBlock(peer.Fingerprint.Grouped()), fyne.TextAlignLeading, fyne.TextStyle{Monospace: true})
+		fingerprint.Importance = widget.LowImportance
+		items = append(items, card(
+			g.compact(container.NewVBox(boldName(peer.Name), fingerprint)),
+			container.NewHBox(rename, remove),
+		))
 	}
 	if len(items) == 0 {
-		items = append(items, newLabel(g.tr.T("gui.trusted.empty")))
+		items = append(items, g.compact(newLabel(g.tr.T("gui.trusted.empty"))))
 	}
 	g.show(container.NewBorder(g.header(g.tr.T("gui.trusted.title")), nil, nil, nil, scroll(container.NewVBox(items...))))
 }
 
-// showSettings sets the language (docs/IDIOMAS.md). It applies on the next start.
+// showSettings sets the language (docs/LANGUAGES.md). It applies on the next start.
 func (g *gui) showSettings() {
 	current, err := settings.Load(g.cfgPath)
 	if err != nil {
 		current = settings.Default
 	}
-	picker := languagePicker(current.Language, func(choice string) {
+	picker := languagePicker(current.Language, g.tr.T("gui.settings.language_auto"), func(choice string) {
 		if err := settings.Save(g.cfgPath, settings.Settings{Language: choice}); err != nil {
 			g.notify(g.tr.T("gui.settings.title"), g.tr.T(apperr.MessageKey(err)))
 			return
@@ -657,17 +796,42 @@ func (g *gui) showSettings() {
 	trusted := widget.NewButtonWithIcon(g.tr.T("gui.home.trusted"), theme.AccountIcon(), g.showTrusted)
 	about := newLabel(g.tr.T("gui.settings.about"))
 	about.Wrapping = fyne.TextWrapWord
-	body := container.NewVBox(newLabel(g.tr.T("gui.settings.language")), g.touch(picker),
+	body := container.NewVBox(g.compact(newLabel(g.tr.T("gui.settings.language"))), g.touch(picker),
 		trusted, about)
 	g.show(container.NewBorder(g.header(g.tr.T("gui.settings.title")), nil, nil, nil, scroll(body)))
 }
 
-// languagePicker lists the languages with the current one selected. Only a
-// choice made by the person calls onChoose: the selection set here does not.
-func languagePicker(current string, onChoose func(string)) *widget.Select {
-	picker := widget.NewSelect([]string{"auto", "pt-BR", "en"}, nil)
-	picker.SetSelected(current)
-	picker.OnChanged = onChoose
+// language is a choice of the language picker: the code that is saved and the
+// name people read. Each language is named in its own language, so it can be
+// found even when the app is in a language the person does not read.
+type language struct{ code, label string }
+
+func languages(autoLabel string) []language {
+	return []language{{"auto", autoLabel}, {"pt-BR", "Português (Brasil)"}, {"en", "English"}}
+}
+
+// languagePicker lists the languages by name with the current one selected.
+// Only a choice made by the person calls onChoose, with the language code: the
+// selection set here does not.
+func languagePicker(current, autoLabel string, onChoose func(code string)) *widget.Select {
+	langs := languages(autoLabel)
+	labels := make([]string, len(langs))
+	for i, l := range langs {
+		labels[i] = l.label
+	}
+	picker := widget.NewSelect(labels, nil)
+	for _, l := range langs {
+		if l.code == current {
+			picker.SetSelected(l.label)
+		}
+	}
+	picker.OnChanged = func(label string) {
+		for _, l := range langs {
+			if l.label == label {
+				onChoose(l.code)
+			}
+		}
+	}
 	return picker
 }
 
@@ -681,7 +845,7 @@ func (g *gui) connectTo(row ui.DeviceRow) {
 		g.notify(g.tr.T("gui.pair.title"), g.tr.T(apperr.MessageKey(err)))
 		return
 	}
-	go func() {
+	g.background(func() {
 		s, err := transport.Dial(g.ctx, ep, g.id, g.store)
 		if err != nil {
 			g.notify(g.tr.T("gui.pair.title"), g.tr.T(apperr.MessageKey(err)))
@@ -689,6 +853,12 @@ func (g *gui) connectTo(row ui.DeviceRow) {
 		}
 		defer func() { _ = s.Close() }()
 		if s.State() == protocol.StateTrusted {
+			if g.rememberPaired(ep, s.PeerKey()) {
+				g.rememberAddress(ep, s.PeerKey())
+				if p, ok := g.pairedAt(ep); ok {
+					row.Name = p.Name
+				}
+			}
 			g.reg.MarkTrusted(ep, true)
 			g.refreshDevices()
 			row.Trusted = true
@@ -696,8 +866,25 @@ func (g *gui) connectTo(row ui.DeviceRow) {
 			g.onUI(func() { g.showTrustedDevice(row) })
 			return
 		}
-		g.pairAsked(g.ctx, s)
-	}()
+		g.pairHint = row.Name
+		paired := g.pairAsked(g.ctx, s, false)
+		g.pairHint = ""
+		if paired {
+			// The person started this pairing, so go on to what comes next: the
+			// device, with its send and receive actions.
+			if g.rememberPaired(ep, s.PeerKey()) {
+				g.rememberAddress(ep, s.PeerKey())
+				if p, ok := g.pairedAt(ep); ok {
+					row.Name = p.Name
+				}
+			}
+			g.reg.MarkTrusted(ep, true)
+			g.refreshDevices()
+			row.Trusted = true
+			row.StatusKey = "ui.status.trusted"
+			g.onUI(func() { g.showTrustedDevice(row) })
+		}
+	})
 }
 
 // sendTo dials the destination and sends. A device that is not trusted is never
@@ -737,6 +924,23 @@ func (g *gui) endpointFor(dest string) (netip.AddrPort, error) {
 // previewClipboard reads the clipboard only after the person chose to send it,
 // and shows a preview before anything leaves the device (PRD §12.2).
 func (g *gui) previewClipboard(send func(transfer.SendSpec)) {
+	// Files copied in the file manager are sent first, as the files themselves.
+	if paths := clipboardPaths(); len(paths) > 0 {
+		g.previewClipboardPaths(paths, send)
+		return
+	}
+	// On phones a copied file comes as its contents: it is copied into the app
+	// first, then sent like a file the person chose.
+	if files := clipboardContents(); len(files) > 0 {
+		g.previewClipboardContents(files, send)
+		return
+	}
+	// A picture on the clipboard (a screenshot, for example) is sent before text:
+	// the text clipboard API cannot see it.
+	if data, ext, ok := clipboardImage(); ok {
+		g.previewClipboardImage(data, ext, send)
+		return
+	}
 	content := g.app.Clipboard().Content()
 	p, err := ui.ClipboardPreview(content)
 	if err != nil {
@@ -757,3 +961,102 @@ func (g *gui) previewClipboard(send func(transfer.SendSpec)) {
 func colorSurface() color.Color { return theme.Color(theme.ColorNameInputBackground) }
 func colorPrimary() color.Color { return theme.Color(theme.ColorNamePrimary) }
 func colorTrack() color.Color   { return color.NRGBA{R: 0x2A, G: 0x27, B: 0x33, A: 0xFF} }
+
+// dropGap is the room between the parts of the drop area and to its edges.
+const dropGap = 14
+
+// dropCard is the area where files are dropped or chosen: a line of text and the
+// choose button, with room around them so they do not touch the edges.
+func dropCard(hint, pick fyne.CanvasObject) fyne.CanvasObject {
+	return card(
+		vgap(dropGap),
+		hint,
+		vgap(dropGap),
+		container.NewCenter(pick),
+		vgap(dropGap),
+	)
+}
+
+// vgap is an empty vertical space of the given height.
+func vgap(h float32) fyne.CanvasObject {
+	gap := canvas.NewRectangle(color.Transparent)
+	gap.SetMinSize(fyne.NewSize(0, h))
+	return gap
+}
+
+// previewClipboardImage asks before sending a picture from the clipboard. The
+// picture is sent as a file, like any file the person chose.
+func (g *gui) previewClipboardImage(data []byte, ext string, send func(transfer.SendSpec)) {
+	size := ui.FormatBytes(int64(len(data)))
+	g.onUI(func() {
+		dialog.ShowCustomConfirm(g.tr.T("gui.send.clipboard_image_title", size), g.tr.T("gui.send.send"), g.tr.T("gui.pair.cancel"),
+			newLabel(g.tr.T("gui.send.clipboard_image_body", size)), func(ok bool) {
+				if !ok {
+					return
+				}
+				spec, err := g.imageSpec(data, ext)
+				if err != nil {
+					g.notify(g.tr.T("gui.send.clipboard"), g.tr.T(apperr.MessageKey(err)))
+					return
+				}
+				send(spec)
+			}, g.win)
+	})
+}
+
+// previewClipboardPaths asks before sending files copied on the clipboard. They
+// are sent from where they are; nothing is copied.
+func (g *gui) previewClipboardPaths(paths []string, send func(transfer.SendSpec)) {
+	plan, err := ui.PlanFiles(paths)
+	if err != nil {
+		g.notify(g.tr.T("gui.send.clipboard"), g.tr.T(apperr.MessageKey(err)))
+		return
+	}
+	names := make([]string, 0, len(plan.Items))
+	for _, it := range plan.Items {
+		names = append(names, it.Name)
+	}
+	g.onUI(func() {
+		dialog.ShowCustomConfirm(g.tr.T("gui.send.clipboard_files_title", g.countFiles(len(plan.Items)), ui.FormatBytes(plan.Total)),
+			g.tr.T("gui.send.send"), g.tr.T("gui.pair.cancel"),
+			newNameLabel(strings.Join(names, ", ")), func(ok bool) {
+				if ok {
+					send(transfer.SendSpec{Kind: transfer.KindFile, Paths: paths})
+				}
+			}, g.win)
+	})
+}
+
+// previewClipboardContents asks before sending files copied on a phone. They are
+// copied into the application's folder and sent from there.
+func (g *gui) previewClipboardContents(files []sharedFile, send func(transfer.SendSpec)) {
+	var paths []string
+	var total int64
+	var names []string
+	for _, f := range files {
+		if int64(len(f.data)) > limits.MaxFileBytes {
+			g.notify(g.tr.T("gui.send.clipboard"), g.tr.T(apperr.MessageKey(apperr.ErrLimitExceeded)))
+			return
+		}
+		path, err := stagePicked(bytes.NewReader(f.data), safeSharedName(f.name, f.mime), filepath.Join(g.home, "clipboard"))
+		if err != nil {
+			g.notify(g.tr.T("gui.send.clipboard"), g.tr.T(apperr.MessageKey(err)))
+			return
+		}
+		paths = append(paths, path)
+		total += int64(len(f.data))
+		names = append(names, filepath.Base(path))
+	}
+	if len(paths) == 0 {
+		return
+	}
+	g.onUI(func() {
+		dialog.ShowCustomConfirm(g.tr.T("gui.send.clipboard_files_title", g.countFiles(len(paths)), ui.FormatBytes(total)),
+			g.tr.T("gui.send.send"), g.tr.T("gui.pair.cancel"),
+			newNameLabel(strings.Join(names, ", ")), func(ok bool) {
+				if ok {
+					send(transfer.SendSpec{Kind: transfer.KindFile, Paths: paths})
+				}
+			}, g.win)
+	})
+}

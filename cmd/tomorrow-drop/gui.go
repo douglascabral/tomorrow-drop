@@ -68,14 +68,41 @@ type gui struct {
 	scanner   *discovery.Scanner
 
 	devicesList *widget.List
+	emptyHint   *fyne.Container
 	rows        []ui.DeviceRow
 	// localAddrs are this device's addresses, used to drop its own answers.
 	localAddrs []netip.Addr
 	// addrs reads this device's addresses; tests replace it.
 	addrs func() []netip.Addr
+	// pickingFile is true while the system's storage picker is open to save a
+	// received file: leaving the foreground for it must not cancel the reception.
+	pickingFile atomic.Bool
+	// share is what another app shared, waiting for a device (share.go).
+	share     *pendingShare
+	pendingMu sync.Mutex
+	// bg counts the goroutines that change the screen after a tap, so a test can
+	// wait for them before it ends.
+	bg sync.WaitGroup
+	// receiving is true while a reception is on screen (see endReception).
+	receiving atomic.Bool
+	// pairHint is the name the device being paired announces, offered as the
+	// start of the name the person gives it.
+	pairHint string
+	// paired remembers which paired device answered at each address (paired.go).
+	pairedMu sync.Mutex
+	paired   map[netip.AddrPort]trust.Peer
 	// screenOn keeps the screen on (true) or lets it turn off (false). Only
 	// phones use it; main sets it from the platform driver.
 	screenOn func(bool)
+}
+
+// background runs fn in a goroutine that is counted in g.bg.
+func (g *gui) background(fn func()) {
+	g.bg.Add(1)
+	go func() {
+		defer g.bg.Done()
+		fn()
+	}()
 }
 
 // keepScreenOn keeps the phone's screen on while the app is in the foreground.
@@ -106,7 +133,8 @@ func newGUI(ctx context.Context, tr *i18n.Bundle, home, cfgPath string, save tra
 		discPort: discovery.DefaultPort,
 		ops:      map[int]context.CancelFunc{},
 		rowParts: map[fyne.CanvasObject]*deviceRowParts{},
-		addrs:    localAddresses,
+		paired:   map[netip.AddrPort]trust.Peer{},
+		addrs:    discovery.LocalAddresses,
 	}
 	recv, err := transfer.NewReceiver(transfer.ReceiverConfig{
 		Decide:      g.askOffer,
@@ -147,7 +175,7 @@ func (g *gui) setAvailable(on bool) {
 	g.availMu.Unlock()
 	// Only mobile interrupts transfers on the way to the background (task 057).
 	// Desktop keeps the transfers already authorized (PRD §17.2).
-	if !on && g.mobile {
+	if !on && g.mobile && !g.pickingFile.Load() {
 		g.cancelOperations()
 	}
 	if err := g.ctl.SetVisible(on); err != nil {
@@ -279,6 +307,18 @@ func (g *gui) logError(err error) {
 	fmt.Fprintln(os.Stderr, g.tr.T(apperr.MessageKey(err)))
 }
 
+// endReception takes the progress ring off after a reception. A reception that
+// was cancelled, by the person or by the phone leaving the foreground, says so
+// and offers to wait for files again; otherwise the screen would keep showing a
+// transfer that is no longer running.
+func (g *gui) endReception(err error) {
+	wasReceiving := g.receiving.Swap(false)
+	g.onUI(func() { g.recvMeter = nil })
+	if wasReceiving && err != nil && (errors.Is(err, context.Canceled) || errors.Is(err, apperr.ErrCanceled)) {
+		g.showOutcome(false, g.tr.T("gui.progress.canceled"), "", nil, g.receiveAgainAction())
+	}
+}
+
 // receiveAgainAction is the completion action that opens the receive screen.
 func (g *gui) receiveAgainAction() doneAction {
 	return doneAction{label: g.tr.T("gui.done.again"), run: g.showReceive}
@@ -295,14 +335,20 @@ func (g *gui) handleIncoming(conn net.Conn) {
 	}
 	defer func() { _ = s.Close() }()
 	if s.State() != protocol.StateTrusted {
-		g.pairAsked(ctx, s)
+		g.pairAsked(ctx, s, true)
 		return
 	}
 	res, err := g.recv.Serve(ctx, s)
-	g.onUI(func() { g.recvMeter = nil })
+	g.endReception(err)
 	if err != nil {
 		// A trusted device that connects without an offer (for example, when
 		// the person only opens it) is not a failed transfer.
+		if errors.Is(err, apperr.ErrPeerWantsToPair) {
+			if peer, ok := g.pairedByKey(s.PeerKey()); ok {
+				g.askUnpairOnRequest(peer)
+			}
+			return
+		}
 		if ctx.Err() != nil || errors.Is(err, apperr.ErrNoOffer) {
 			return
 		}
@@ -313,10 +359,13 @@ func (g *gui) handleIncoming(conn net.Conn) {
 		g.showText(res.Text)
 		return
 	}
-	g.showCompleted(g.tr.T("gui.receive.done"), g.tr.T("gui.receive.saved", len(res.Files)), res.Files, g.receiveAgainAction())
+	g.showCompleted(g.tr.T("gui.receive.done"), g.savedText(len(res.Files)), res.Files, g.receiveAgainAction())
 }
 
-func (g *gui) pairAsked(ctx context.Context, s *transport.Session) {
+// pairAsked runs the pairing on s and reports whether the device was paired.
+// announce says "Paired" in an alert; a pairing the person started goes on to
+// the device screen instead.
+func (g *gui) pairAsked(ctx context.Context, s *transport.Session, announce bool) bool {
 	name, err := pairing.Run(ctx, s, g.id, g.store, pairing.Prompts{
 		Confirm: g.askPairing,
 		Name:    g.askName,
@@ -325,10 +374,13 @@ func (g *gui) pairAsked(ctx context.Context, s *transport.Session) {
 		if !errors.Is(err, pairing.ErrCancelled) {
 			g.notify(g.tr.T("gui.pair.failed"), g.tr.T(apperr.MessageKey(err)))
 		}
-		return
+		return false
 	}
-	g.notify(g.tr.T("gui.pair.done"), g.tr.T("gui.pair.paired", name))
+	if announce {
+		g.notify(g.tr.T("gui.pair.done"), g.tr.T("gui.pair.paired", name))
+	}
 	g.refreshDevices()
+	return true
 }
 
 // manualEndpoint parses what the person typed in the manual connection field.

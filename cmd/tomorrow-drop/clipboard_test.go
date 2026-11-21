@@ -32,6 +32,8 @@ func findButton(obj fyne.CanvasObject, text string) *widget.Button {
 		}
 	case *container.Scroll:
 		return findButton(o.Content, text)
+	case *container.ThemeOverride:
+		return findButton(o.Content, text)
 	case *fyne.Container:
 		for _, c := range o.Objects {
 			if b := findButton(c, text); b != nil {

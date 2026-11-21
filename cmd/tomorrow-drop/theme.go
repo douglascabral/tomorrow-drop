@@ -98,3 +98,32 @@ func (g *gui) touch(obj fyne.CanvasObject) fyne.CanvasObject {
 	spacer.SetMinSize(fyne.NewSize(0, touchMinHeight))
 	return container.NewStack(spacer, obj)
 }
+
+// compactTheme keeps the text size of the touch theme but not its padding, for
+// blocks of text. The padding that makes a button easy to tap would make every
+// line of text as high as a button.
+type compactTheme struct {
+	darkTheme
+}
+
+func (compactTheme) Size(n fyne.ThemeSizeName) float32 {
+	switch n {
+	case theme.SizeNameInnerPadding:
+		return 6
+	case theme.SizeNamePadding:
+		return 8
+	case theme.SizeNameText:
+		return 18
+	}
+	return darkTheme{}.Size(n)
+}
+
+// compact lays out a block of text compactly on a phone. Controls are not
+// passed through it, so they keep the large touch size. On desktop the object
+// is returned as it is.
+func (g *gui) compact(obj fyne.CanvasObject) fyne.CanvasObject {
+	if !g.mobile {
+		return obj
+	}
+	return container.NewThemeOverride(obj, compactTheme{})
+}

@@ -29,6 +29,8 @@ func (g *gui) saveLocation(name string) (io.WriteCloser, error) {
 		err error
 	}
 	asked := make(chan answer, 1)
+	// The picker takes the app to the background; the reception must go on.
+	g.pickingFile.Store(true)
 	fyne.Do(func() {
 		d := dialog.NewFileSave(func(w fyne.URIWriteCloser, err error) {
 			switch {
@@ -46,8 +48,10 @@ func (g *gui) saveLocation(name string) (io.WriteCloser, error) {
 
 	select {
 	case a := <-asked:
+		g.pickingFile.Store(false)
 		return a.w, a.err
 	case <-g.ctx.Done():
+		g.pickingFile.Store(false)
 		// A writer may still arrive after the app stopped. Close it so the
 		// platform does not keep a half-written file open.
 		go func() {

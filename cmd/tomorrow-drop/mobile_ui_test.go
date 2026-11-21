@@ -75,6 +75,8 @@ func buttonLabels(obj fyne.CanvasObject) []string {
 		return []string{o.Text}
 	case *container.Scroll:
 		return buttonLabels(o.Content)
+	case *container.ThemeOverride:
+		return buttonLabels(o.Content)
 	case *fyne.Container:
 		var out []string
 		for _, child := range o.Objects {
@@ -124,6 +126,8 @@ func labelTexts(obj fyne.CanvasObject) []string {
 	case *widget.Button:
 		return []string{o.Text}
 	case *container.Scroll:
+		return labelTexts(o.Content)
+	case *container.ThemeOverride:
 		return labelTexts(o.Content)
 	case *fyne.Container:
 		var out []string
