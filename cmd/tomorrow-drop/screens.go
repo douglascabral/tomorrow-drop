@@ -245,12 +245,18 @@ func (g *gui) fillDeviceRow(obj fyne.CanvasObject, row ui.DeviceRow) {
 	// The row was laid out before its texts were known; lay it out again so the
 	// status gets its full width.
 	obj.Refresh()
-	// An offline paired device keeps its name but loses the check icon.
-	if row.Trusted && row.Presence != discovery.PresenceOffline {
+	// Only a device that answered its last check is green with the check icon.
+	// An offline one is red without it; one not checked yet is neutral.
+	switch {
+	case row.Trusted && row.Presence == discovery.PresenceOnline:
 		parts.status.Importance = widget.SuccessImportance
 		parts.icon.SetResource(theme.ConfirmIcon())
 		parts.icon.Show()
-	} else {
+	case row.Presence == discovery.PresenceOffline:
+		parts.status.Importance = widget.DangerImportance
+		parts.icon.SetResource(nil)
+		parts.icon.Hide()
+	default:
 		parts.status.Importance = widget.LowImportance
 		parts.icon.SetResource(nil)
 		parts.icon.Hide()

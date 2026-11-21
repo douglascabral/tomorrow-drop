@@ -102,8 +102,7 @@ struct PairedRow: View {
 
     private var label: some View {
         HStack {
-            Image(systemName: paired.presence == "offline" ? "circle" : "checkmark.circle.fill")
-                .foregroundColor(paired.presence == "offline" ? .secondary : .green)
+            Image(systemName: statusIcon).foregroundColor(statusColor)
             VStack(alignment: .leading, spacing: 2) {
                 Text(paired.name)
                 Text(paired.addr ?? L.t("No known address", "Sem endereço conhecido"))
@@ -124,10 +123,21 @@ struct PairedRow: View {
         }
     }
 
+    // Only a device that answered its last check is green. An offline one is
+    // red; one not checked yet is neutral, never green.
     private var statusColor: Color {
         switch paired.presence {
-        case "offline": return .secondary
-        default: return .green
+        case "online": return .green
+        case "offline": return .red
+        default: return .secondary
+        }
+    }
+
+    private var statusIcon: String {
+        switch paired.presence {
+        case "online": return "checkmark.circle.fill"
+        case "offline": return "xmark.circle.fill"
+        default: return "circle"
         }
     }
 }

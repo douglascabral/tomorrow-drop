@@ -55,10 +55,17 @@ func TestDesktopKeepsCompactTheme(t *testing.T) {
 // A paired device is marked with an icon; a discovered one is not.
 func TestPairedDeviceRowShowsIcon(t *testing.T) {
 	g := newTestGUI(t)
+	// The check icon means online: a paired device that answered its last check.
+	// A paired device not checked yet is neutral, so it has no icon.
 	paired := g.newDeviceRow()
-	g.fillDeviceRow(paired, ui.DeviceRow{Name: "laptop", Address: "10.0.0.2:47521", Trusted: true, StatusKey: "ui.status.trusted"})
+	g.fillDeviceRow(paired, ui.DeviceRow{Name: "laptop", Address: "10.0.0.2:47521", Trusted: true, StatusKey: "ui.status.online", Presence: discovery.PresenceOnline})
 	if parts := g.rowParts[paired]; parts == nil || !parts.icon.Visible() || parts.icon.Resource == nil {
-		t.Fatalf("paired device row has no icon")
+		t.Fatalf("online paired device row has no icon")
+	}
+	unchecked := g.newDeviceRow()
+	g.fillDeviceRow(unchecked, ui.DeviceRow{Name: "laptop", Address: "10.0.0.2:47521", Trusted: true, StatusKey: "ui.status.trusted"})
+	if parts := g.rowParts[unchecked]; parts == nil || parts.icon.Visible() {
+		t.Fatalf("paired device not checked yet shows the online icon")
 	}
 
 	found := g.newDeviceRow()

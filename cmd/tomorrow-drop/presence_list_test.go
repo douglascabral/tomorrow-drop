@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"fyne.io/fyne/v2/widget"
+
 	"tomorrow-drop/internal/discovery"
 )
 
@@ -140,4 +142,45 @@ func listenOnLoopback(t *testing.T) (net.Listener, netip.AddrPort) {
 	}
 	t.Cleanup(func() { _ = ln.Close() })
 	return ln, netip.MustParseAddrPort(ln.Addr().String())
+}
+
+// Regression: an offline paired device was shown in the colour of an online one
+// when it had no current check result, and the check icon came with it. Online
+// is green with the check icon; offline is red without it; a device not checked
+// yet is neutral, never green.
+func TestPresenceColoursMatchTheState(t *testing.T) {
+	g := newTestGUI(t)
+	up := pairedAndRemembered(t, g)
+	g.refreshDevices()
+
+	// Not checked yet: neutral, no check icon.
+	obj := g.newDeviceRow()
+	g.fillDeviceRow(obj, pairedItems(g)[0].row)
+	parts := g.rowParts[obj]
+	if parts.status.Importance == widget.SuccessImportance || parts.icon.Visible() {
+		t.Fatalf("a device not checked yet looks online (importance %v, icon %v)", parts.status.Importance, parts.icon.Visible())
+	}
+
+	peers, _ := g.store.List()
+	g.rememberAddress(closedEndpoint(t), peers[0].Key)
+	g.checkPresence()
+	g.refreshDevices()
+
+	rows := pairedItems(g)
+	if len(rows) != 1 || rows[0].row.Address == up.String() {
+		t.Fatalf("setup: paired rows = %+v", rows)
+	}
+	g.fillDeviceRow(obj, rows[0].row)
+	if parts.status.Importance != widget.DangerImportance || parts.icon.Visible() {
+		t.Fatalf("offline device is not red without the icon (importance %v, icon %v)", parts.status.Importance, parts.icon.Visible())
+	}
+
+	g.rememberAddress(up, peers[0].Key)
+	g.checkPresence()
+	g.refreshDevices()
+	rows = pairedItems(g)
+	g.fillDeviceRow(obj, rows[0].row)
+	if parts.status.Importance != widget.SuccessImportance || !parts.icon.Visible() {
+		t.Fatalf("online device does not show the online colours (importance %v, icon %v)", parts.status.Importance, parts.icon.Visible())
+	}
 }
