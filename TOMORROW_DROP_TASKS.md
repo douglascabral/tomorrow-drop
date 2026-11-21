@@ -53,14 +53,14 @@
 
 ## 05 — CLI
 
-[   ] 037. Implement `tdrop identity show`, displaying the local identity and complete fingerprint without revealing the private key.
-[   ] 038. Implement `tdrop discover` and manual connection by IP:port.
-[   ] 039. Implement `tdrop pair <destination>` with interactive confirmation and mutual verification.
-[   ] 040. Implement `tdrop trust list` and `tdrop trust remove <id>`.
-[   ] 041. Implement `tdrop send <file> --to <destination>` and `tdrop send --stdin --to <destination>`.
-[   ] 042. Implement `tdrop receive` with mandatory interactive authorization by default.
-[   ] 043. Implement `tdrop daemon` as an explicitly started continuous mode, documenting non-interactive authorization rules when configured.
-[   ] 044. Create CLI↔CLI integration tests, exit codes, stdout/stderr, cancellation and headless execution.
+[x] 037. Implement `tdrop identity show`, displaying the local identity and complete fingerprint without revealing the private key.
+[x] 038. Implement `tdrop discover` and manual connection by IP:port.
+[x] 039. Implement `tdrop pair <destination>` with interactive confirmation and mutual verification.
+[x] 040. Implement `tdrop trust list` and `tdrop trust remove <id>`.
+[x] 041. Implement `tdrop send <file> --to <destination>` and `tdrop send --stdin --to <destination>`.
+[x] 042. Implement `tdrop receive` with mandatory interactive authorization by default.
+[x] 043. Implement `tdrop daemon` as an explicitly started continuous mode, documenting non-interactive authorization rules when configured.
+[x] 044. Create CLI↔CLI integration tests, exit codes, stdout/stderr, cancellation and headless execution.
 
 ## 06 — Fyne desktop interface
 

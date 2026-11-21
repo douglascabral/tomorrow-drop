@@ -12,6 +12,7 @@ Free, minimalist application to transfer files, texts, links and clipboard conte
 - [Build](docs/COMPILACAO.md): build for Linux, Windows and macOS.
 - [Protocol](docs/PROTOCOLO.md): framing, version, states, limits and timeouts.
 - [Discovery and connectivity](docs/DISCOVERY.md): UDP datagrams, rate limits, query schedule, device list and manual connection.
+- [Command-line interface](docs/CLI.md): commands, exit codes, authorization rules and headless use.
 - [Transfers](docs/TRANSFERS.md): offers, decisions, staging, all-or-nothing publishing and failure handling.
 - [Identity and trust](docs/IDENTIDADE.md): keys, fingerprint, TLS, pairing and message policy.
 - [Languages](docs/IDIOMAS.md): pt-BR as the initial language, English as fallback, system detection and user choice.
