@@ -19,6 +19,7 @@ import (
 	"tomorrow-drop/internal/transfer"
 	"tomorrow-drop/internal/transport"
 	"tomorrow-drop/internal/trust"
+	"tomorrow-drop/internal/ui"
 )
 
 func newTestGUI(t *testing.T) *gui {
@@ -180,5 +181,16 @@ func TestMobileBackgroundCancelsRunningOperations(t *testing.T) {
 
 	if ctx.Err() == nil {
 		t.Fatalf("backgrounding a mobile app did not interrupt the running transfer")
+	}
+}
+
+// Each device line records its own labels, so filling it sets the right texts.
+func TestDeviceRowFillsItsOwnLabels(t *testing.T) {
+	g := newTestGUI(t)
+	item := g.newDeviceRow()
+	g.fillDeviceRow(item, ui.DeviceRow{Name: "MacBook", Address: "192.168.1.42:47521", StatusKey: "ui.status.trusted", Trusted: true})
+	parts := g.rowParts[item]
+	if parts == nil || parts.name.Text != "MacBook" || parts.address.Text != "192.168.1.42:47521" {
+		t.Fatalf("row labels not filled: %+v", parts)
 	}
 }

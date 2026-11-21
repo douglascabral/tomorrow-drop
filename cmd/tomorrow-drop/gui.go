@@ -33,12 +33,15 @@ import (
 // rules are never implemented here; this type only starts the services, asks
 // people questions and shows results.
 type gui struct {
-	ctx     context.Context
-	tr      *i18n.Bundle
-	app     fyne.App
-	win     fyne.Window
-	home    string
-	cfgPath string
+	rowParts  map[fyne.CanvasObject]*deviceRowParts
+	recvMeter *meter
+	recvStart time.Time
+	ctx       context.Context
+	tr        *i18n.Bundle
+	app       fyne.App
+	win       fyne.Window
+	home      string
+	cfgPath   string
 
 	id    *identity.Identity
 	store *trust.Store
@@ -83,11 +86,13 @@ func newGUI(ctx context.Context, tr *i18n.Bundle, home, cfgPath string) (*gui, e
 		tlsPort:  defaultTLSPort,
 		discPort: discovery.DefaultPort,
 		ops:      map[int]context.CancelFunc{},
+		rowParts: map[fyne.CanvasObject]*deviceRowParts{},
 	}
 	recv, err := transfer.NewReceiver(transfer.ReceiverConfig{
 		Decide:     g.askOffer,
 		StagingDir: filepath.Join(home, "staging"),
 		DestDir:    downloads,
+		OnProgress: g.onReceiveProgress,
 	})
 	if err != nil {
 		return nil, err
@@ -250,15 +255,19 @@ func (g *gui) handleIncoming(conn net.Conn) {
 		return
 	}
 	res, err := g.recv.Serve(ctx, s)
+	g.onUI(func() { g.recvMeter = nil })
 	if err != nil {
-		g.notify(g.tr.T("gui.receive.failed"), g.tr.T(apperr.MessageKey(err)))
+		if ctx.Err() != nil {
+			return
+		}
+		g.showCompleted(g.tr.T("gui.receive.failed"), g.tr.T(apperr.MessageKey(err)), nil)
 		return
 	}
 	if res.Text != "" {
 		g.showText(res.Text)
 		return
 	}
-	g.notify(g.tr.T("gui.receive.done"), g.tr.T("gui.receive.saved", len(res.Files)))
+	g.showCompleted(g.tr.T("gui.receive.done"), g.tr.T("gui.receive.saved", len(res.Files)), res.Files)
 }
 
 func (g *gui) pairAsked(ctx context.Context, s *transport.Session) {
