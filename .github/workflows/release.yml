@@ -1,0 +1,42 @@
+name: Release
+
+# Builds the command-line program (Linux and Windows), the Linux package (.deb)
+# and the Windows application (.exe). A version tag (v*) also publishes them as
+# a GitHub release. A manual run only builds them, so the build can be checked.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Build packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: go.mod
+      - name: Command-line program (Linux and Windows)
+        run: make cross
+      - name: Linux package (.deb)
+        run: make package-linux
+      - name: Windows application (.exe)
+        run: make package-windows
+      - name: Collect the files
+        run: |
+          mkdir -p release
+          cp bin/tdrop-linux-amd64 bin/tdrop-windows-amd64.exe release/
+          cp dist/TomorrowDrop-linux-amd64.deb dist/TomorrowDrop-windows-amd64.exe release/
+          cd release && sha256sum * > SHA256SUMS && cat SHA256SUMS
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" release/* --title "$GITHUB_REF_NAME" --generate-notes
