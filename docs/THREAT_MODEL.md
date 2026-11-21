@@ -16,6 +16,7 @@ Task 062. The threats come from PRD §22. For each one, this document names the 
 | Downgrade of the protocol version | Version list exchanged inside TLS; highest common version only | `TestRejectsIncompatibleVersionInHello`, `TestConfirmationCannotBeReusedWithAnotherVersion` |
 | Malicious transfer requests | Every offer needs a decision; names, sizes and links validated before anything is written | `TestMaliciousOfferNamesAreRejected`, `TestValidateLinkAcceptsOnlyHTTP`, `TestDataBeyondDeclaredSizeIsRejected` |
 | Resource abuse | Frame, datagram, file, offer, text, device-list and concurrency limits; rate limiting per origin | `internal/limits` tests, `TestListenerEnforcesPerOriginRateLimit`, `TestBusyReceiverDeclinesExtraTransfers` |
+| Reachability checks of paired devices | A check is a TCP connect with no TLS and no data, to addresses of paired devices only; it authorizes nothing. Whoever sees the traffic learns only that a TCP connection was made to the device's address | `TestProbeIsTrueWhenSomethingAcceptsTCP`, `TestCheckRecordsEveryAddress` |
 
 ## Adversarial tests of the first pairing
 

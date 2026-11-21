@@ -63,6 +63,18 @@ The counter restarts after every query, including Refresh.
 - `discovery.ParseEndpoint` accepts `IPv4:port` and `[IPv6]:port`. Host names are rejected, so no name resolution happens. Port 0, unspecified, multicast and broadcast addresses are rejected.
 - `transport.Dial` opens TCP and then runs the same TLS handshake as the automatic flow. No key is pinned, and the state is derived from the trust list afterwards (PRD §5.5: the IP address is never a trusted identity).
 
-## 7. Open item: task 024
+## 7. Presence of paired devices
+
+`discovery.Presence` keeps, in memory, whether each paired device accepted a connection the last time it was checked. The home screen shows Online, Offline, or nothing yet (`presence.go`, `presence_check.go`, `core.presenceText` on iOS).
+
+- **Method:** a TCP connect to the last address each paired device answered at, with a timeout of `protocol.PresenceTimeout` (2 s). It sends no data and does not start TLS. Up to 8 devices are checked at a time.
+- **Why not UDP or TLS:** announcements are broadcast, so they cannot say whether one device is up, and a device on another VLAN is not reached by them. A TLS handshake would make the other device start a receive job on screen (iOS), so it is not used for this check.
+- **When:** with the discovery timer (every 30 s while visible, `protocol.DiscoveryInterval`), when Refresh is clicked, and after a successful connection. Nothing runs in the background. On iOS the check is skipped while a transfer or a pairing is on screen.
+- **Lifetime:** a result is current for `2 × DiscoveryInterval + PresenceTimeout` (62 s). Older results show as unknown, so one missed round never leaves a stale "online".
+- **Limitation:** "online" means that something accepts TCP at that address and port. It does not prove it is the same device (an address can be reused). A device whose address changed shows Offline. Nothing is authorized by this check: a transfer still needs the pinned TLS identity.
+- **Scope:** only the addresses of devices already paired. It is not a scan of the network. Unpairing forgets the result and the address.
+- **Not in the CLI:** `tdrop` runs one command at a time and keeps no list on screen, so it does not show presence. A `tdrop trust list --check` could reuse `Presence.Check`; it is not built.
+
+## 8. Open item: task 024
 
 Automated tests cover the logic: message validation, rate limits, schedule, nonce matching, subnet computation for multiple interfaces, and loopback exchanges. The real-network matrix (same VLAN, blocked broadcast, client isolation, multiple interfaces, no route) must be run on physical networks and recorded here before task 024 is marked complete.

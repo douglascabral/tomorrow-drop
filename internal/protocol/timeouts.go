@@ -11,4 +11,7 @@ const (
 	IdleTimeout = 30 * time.Second
 	// DiscoveryInterval is the DISCOVER interval while the app is visible (PRD §5.2).
 	DiscoveryInterval = 30 * time.Second
+	// PresenceTimeout limits the TCP connect that checks whether a paired device
+	// is reachable (internal/discovery/presence.go). No TLS and no data are sent.
+	PresenceTimeout = 2 * time.Second
 )
