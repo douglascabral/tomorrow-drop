@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/netip"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -23,7 +24,6 @@ import (
 func pairedDevice(t *testing.T, g *gui) netip.AddrPort {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	t.Cleanup(cancel)
 
 	other, err := identity.Generate()
 	if err != nil {
@@ -34,8 +34,19 @@ func pairedDevice(t *testing.T, g *gui) netip.AddrPort {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = ln.Close() })
-	go answerLikeAPhone(ctx, ln, other, otherStore)
+	// The fake device writes its own trust file in a temporary folder. Stop it and
+	// wait for it before the folder is removed, or the cleanup fails with
+	// "directory not empty" when the device is still saving (TestPeerAskingToPairAgain...).
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		answerLikeAPhone(ctx, ln, other, otherStore)
+	}()
+	t.Cleanup(func() {
+		cancel()
+		_ = ln.Close()
+		<-done
+	})
 	ep := netip.MustParseAddrPort(ln.Addr().String())
 
 	s, err := transport.Dial(ctx, ep, g.id, g.store)
@@ -134,12 +145,18 @@ func TestPairedListOffersUnpair(t *testing.T) {
 // answerLikeAPhone accepts connections as the other device does: trusted peers
 // are served, unknown ones take part in pairing.
 func answerLikeAPhone(ctx context.Context, ln net.Listener, id *identity.Identity, store *trust.Store) {
+	// Connections are finished before this returns, so nothing is still saving
+	// when the caller goes on.
+	var conns sync.WaitGroup
+	defer conns.Wait()
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			return
 		}
+		conns.Add(1)
 		go func() {
+			defer conns.Done()
 			s, err := transport.Server(ctx, conn, id, store)
 			if err != nil {
 				return
