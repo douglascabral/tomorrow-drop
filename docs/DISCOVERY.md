@@ -14,10 +14,10 @@ UDP datagrams, UTF-8 JSON, at most `limits.MaxDiscoveryDatagram` (1 KiB). Port: 
 - `v`: must equal `1`.
 - `type`: `DISCOVER` or `ANNOUNCE`. Any other value is rejected.
 - `nonce`: 8 random bytes in hexadecimal (16 characters), generated with `crypto/rand`. `ANNOUNCE` echoes the nonce of the query it answers.
-- `name`: friendly name (1 to 64 characters, no control characters). Only in `ANNOUNCE`.
+- `name`: friendly name (1 to 64 characters, no control characters). Only in `ANNOUNCE`. It is the device name and its system, for example `iPad de Douglas · iPadOS 26.1` or `samsung SM-S911B · Android 15`; on desktop it is the computer name. The device name is the one its owner set in the system, so it may contain the owner's first name.
 - `port`: TCP port of the TLS listener (1 to 65535). Only in `ANNOUNCE`.
 
-Validation is strict: unknown fields, trailing data, oversized datagrams and fields that do not belong to the type are rejected. Nothing else is carried: no key, fingerprint, IP address, MAC address or user name. The sender's address comes from the UDP packet itself.
+Validation is strict: unknown fields, trailing data, oversized datagrams and fields that do not belong to the type are rejected. Nothing else is carried: no key, fingerprint, IP address or MAC address. The name may include the device name set by its owner, as described above. The sender's address comes from the UDP packet itself.
 
 ## 2. Listener (task 018)
 

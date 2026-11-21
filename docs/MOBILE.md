@@ -54,8 +54,26 @@ The clipboard is read only after the person presses "Send clipboard", with the s
 
 ## 060 — Touch and screen sizes
 
-The screens use Fyne containers that resize, and the send and home screens scroll. Touch targets, orientation changes and accessibility have not been checked on a device.
+The screens use Fyne containers that resize, and the send and home screens scroll. On phones and tablets `themeFor(true)` (`cmd/tomorrow-drop/theme.go`) enlarges the padding, text and icons, so a button is at least 64 dp high and a device row at least 72 dp, above the 48 dp guideline. `TestMobileTouchTargetsAreLarge` checks this. Text fields and buttons follow the theme; the settings picker is kept at 64 dp by `gui.touch` (`TestMobileControlsAreLargeOnEveryScreen`, `TestTouchKeepsPickersLargeOnlyOnMobile`); desktop keeps the compact theme (`TestDesktopKeepsCompactTheme`). Orientation changes, accessibility and the real size on a device have not been checked.
 
 ## 061 — Device tests
 
 Not run. They need a physical Android device, an iPhone or iPad, and a desktop on the same network, including suspension and the enterprise network cases of task 024.
+
+## Device name in the announcement (task 022 follow-up)
+
+The name a phone or tablet announces comes from the platform (`cmd/tomorrow-drop/devicename_*.go`, selected by build tags), formatted by `ui.DeviceLabel`:
+
+- iOS/iPadOS: `UIDevice.name` and `systemName systemVersion`, through cgo with Objective-C. Since iOS 16, Apple may return only the generic model name (for example "iPad") unless the app has the user-assigned device name entitlement; the name shown on the other device will be whatever iOS returns. Not verified on a device.
+- Android: `android.os.Build.MANUFACTURER` and `MODEL`, and `Build.VERSION.RELEASE`, read through JNI. `JNI_GetCreatedJavaVMs` is looked up with `dlsym` because the NDK does not export it to applications. Not verified on a device.
+- Desktop: the computer name.
+
+Both native builds compile (`GOOS=android` with the NDK clang and `GOOS=ios` with the iPhoneOS SDK). Reading the values on a device is still open.
+
+## Screen on while the app is open
+
+On phones the app keeps the screen on while it is in the foreground, and leaving the foreground lets it turn off, which interrupts transfers (task 057). Covered by `TestPhoneKeepsTheScreenOnWhileTheAppIsOpen`; desktop is unchanged (`TestDesktopDoesNotChangeScreenBlanking`).
+
+- Android: a screen-bright wake lock (`screenawake_android.go`, JNI through `PowerManager`). It needs `android.permission.WAKE_LOCK`, which the Fyne packaging tool does not declare, so `scripts/fyne-tools/android-keep-screen-on.patch` adds it. The window flag that Fyne uses (`SetDisableScreenBlanking`) did not take effect on the test phone (`mHoldScreenWindow=null`), so it is not used. Checked on a Motorola G75: the lock is held while the app is open, the screen stayed awake for 75 s with a 60 s timeout, and the lock is released when the app leaves the foreground.
+- iOS/iPadOS: `UIApplication.idleTimerDisabled` (`screenawake_ios.go`). Compiles; not checked on a device.
+- Desktop: no change.

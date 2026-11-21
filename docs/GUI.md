@@ -12,13 +12,35 @@ Tasks 045 to 054 (block 06). Implementation in `cmd/tomorrow-drop` (Fyne screens
 
 | Screen | Content |
 |---|---|
-| Home | Send, Trusted, Settings; discovered devices (trusted first); Refresh; manual connection by IP:port; the receiving port |
+| Home | This device's IPv4 address(es), so two open devices can be told apart by sight; discovered devices (trusted first, paired ones marked with a check icon; this device is never listed); Refresh; manual connection by IP:port; Settings. Send and receive are offered on the device screen, after a device is chosen |
 | Device | Send to this device, or Pair with it |
 | Send | Destination (name or IP:port); add files and send them; text; send the clipboard after a preview; progress bar and Cancel |
 | Pairing (dialog) | Both complete fingerprints, instructions, Confirm or Cancel, then a name for the device |
 | Incoming offer (dialog) | Sender name, kind, item count, total size, file names; Accept or Decline |
+| Received text | The text, read only, and a button that copies it to the device clipboard |
 | Trusted devices | List with identifier and name; Inspect shows the full fingerprint and can remove trust |
-| Settings | Language: auto, pt-BR or en (applies on the next start) |
+| Settings | Language: auto, pt-BR or en (applies on the next start); showing the current language saves nothing; the "about" text wraps |
+
+## 2.1 Layout on desktop
+
+On desktop every screen is a centered column of at most 960 px (`maxWidthLayout` in `cmd/tomorrow-drop/column.go`, applied in `gui.show`), so a wide window does not stretch the controls. Narrow windows use the whole width. The send screen on desktop does not use the column: the target and the drop area stay on top, the list of files or the text takes the height that is left, and the send action sits at the bottom. Phones keep the full width. Covered by `TestColumnCentersContentWithAMaximumWidth`, `TestColumnUsesTheWholeNarrowWindow` and `TestDesktopScreensUseTheColumnAndPhonesDoNot`.
+
+## 2.2 Phones
+
+- Every label wraps its text (`newLabel`, `newLabelStyled`), so long text never widens a screen beyond the window. `TestScreensFitThePhoneWidth` checks each screen at 420 px.
+- Send screen on a phone: the hint speaks of "this phone or tablet", and the send action is a labeled button across the screen (`sendRow`).
+- Receive screen title is "Receive" / "Receber"; the incoming-offer dialog title includes the sender's name.
+- Device rows: the status stays on one line and the row is laid out again after its texts are set (`TestDeviceRowStatusStaysOnOneLine`).
+
+## 2.3 Choosing files
+
+- On a phone the chosen file is a content address, not a path. `stagePicked` copies it into `<home>/picked/pick-*/<name>` when it is chosen, so the send uses a real file. The copy is not removed yet. `TestPickedFileIsCopiedWithItsContent` covers the copy.
+- On desktop the path is used directly, and the file dialog is sized to 90% of the window (`pickerSize`, `TestPickerFillsTheWindow`).
+
+## 2.4 Result of a transfer
+
+- A failed or cancelled transfer shows an error mark; only a completed one shows the success mark (`showOutcome`, `TestFailedTransferShowsAnErrorMark`).
+- A connection that ends during a transfer reads "The connection ended before the transfer finished." A folder that cannot be written reads "The app cannot write to this folder. Check its permissions." (`apperr.MessageKey`, `TestMessageKeyNamesConnectionAndPermissionProblems`).
 
 ## 3. Availability (task 053)
 
