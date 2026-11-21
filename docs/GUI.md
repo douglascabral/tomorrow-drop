@@ -55,6 +55,7 @@ Screens.
 - Progress: Cancel works on a reception too, and a cancelled or cut reception shows a result instead of leaving the ring on screen.
 - Result: the header is neutral ("Transfer"); "Open folder" is only on desktop.
 - Manual connection: Enter connects; the card keeps its natural height.
+- A device paired by IP:port stays in the device list for the rest of the session, even when it is on another network and does not announce itself (`TestDeviceConnectedByAddressStaysListedDuringTheSession`).
 - Settings: languages are named for people (Automatic, Português (Brasil), English).
 - Fingerprints are shown in four lines of four groups, so they can be compared piece by piece.
 - This device's fingerprint is one tap away, right below the address: a "View my fingerprint" button on the home screen and on the screen of a paired device. It opens the whole fingerprint in four lines, with a button to copy it. No screen shows only the start of it, so nobody is tempted to compare just the beginning (`TestHomeOffersThisDevicesFingerprintBelowItsAddress`, `TestPairedDeviceScreenOffersThisDevicesFingerprintBelowTheAddress`, `TestFingerprintViewShowsTheWholeFingerprint`). The card at the end of the device screen is the other device's fingerprint.

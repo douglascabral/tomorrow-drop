@@ -56,6 +56,7 @@ The counter restarts after every query, including Refresh.
 - Entries expire 90 seconds after their last answer.
 - The list holds at most `limits.MaxDiscoveredDevices` (256) entries. When it is full after pruning, new devices are rejected with `error.limit_exceeded`.
 - `Trusted` is set only through `MarkTrusted`, after an authenticated connection to that address shows the device is trusted. An announcement never marks a device as trusted.
+- A device the person connected to by address (section 6) is **pinned** with `Pin` once it is paired. A pinned entry does not expire and is not pruned while the application runs, even when no announcement comes from it (for example, a device on another VLAN). `Unpin` gives the entry back the normal 90-second rule, and is called when the device is unpaired. Nothing is persisted, so pinned entries are gone when the application closes.
 
 ## 6. Manual connection (task 023)
 

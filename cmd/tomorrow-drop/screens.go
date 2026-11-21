@@ -265,7 +265,7 @@ func (g *gui) openDevice(row ui.DeviceRow) {
 		g.showTrustedDevice(row)
 		return
 	}
-	g.connectTo(row)
+	g.connectTo(row, false)
 }
 
 // showTrustedDevice is the paired-device screen: actions first, identity below
@@ -358,7 +358,7 @@ func (g *gui) showManual() {
 			g.notify(g.tr.T("gui.home.manual"), g.tr.T(apperr.MessageKey(err)))
 			return
 		}
-		g.connectTo(ui.DeviceRow{Name: ep.String(), Address: ep.String(), StatusKey: "ui.status.discovered"})
+		g.connectTo(ui.DeviceRow{Name: ep.String(), Address: ep.String(), StatusKey: "ui.status.discovered"}, true)
 	}
 	// Enter connects from either field.
 	ip.OnSubmitted = func(string) { connect() }
@@ -839,8 +839,9 @@ func languagePicker(current, autoLabel string, onChoose func(code string)) *widg
 // connectTo contacts a device the person chose. Trust is known only after the
 // connection is authenticated (docs/DISCOVERY.md), so the device is contacted
 // first: a trusted device opens its screen with the send and receive actions,
-// and an unknown one goes to pairing.
-func (g *gui) connectTo(row ui.DeviceRow) {
+// and an unknown one goes to pairing. byAddress is true for a device the person
+// typed as IP:port: once it is paired it stays in the list for this session.
+func (g *gui) connectTo(row ui.DeviceRow, byAddress bool) {
 	ep, err := manualEndpoint(row.Address)
 	if err != nil {
 		g.notify(g.tr.T("gui.pair.title"), g.tr.T(apperr.MessageKey(err)))
@@ -860,7 +861,7 @@ func (g *gui) connectTo(row ui.DeviceRow) {
 					row.Name = p.Name
 				}
 			}
-			g.reg.MarkTrusted(ep, true)
+			g.markListed(ep, row.Name, byAddress)
 			g.refreshDevices()
 			row.Trusted = true
 			row.StatusKey = "ui.status.trusted"
@@ -879,13 +880,23 @@ func (g *gui) connectTo(row ui.DeviceRow) {
 					row.Name = p.Name
 				}
 			}
-			g.reg.MarkTrusted(ep, true)
+			g.markListed(ep, row.Name, byAddress)
 			g.refreshDevices()
 			row.Trusted = true
 			row.StatusKey = "ui.status.trusted"
 			g.onUI(func() { g.showTrustedDevice(row) })
 		}
 	})
+}
+
+// markListed marks a device paired at ep as trusted in the list. A device
+// connected to by address (byAddress) is added to the list even when no
+// announcement reached this device, and stays there while the app runs.
+func (g *gui) markListed(ep netip.AddrPort, name string, byAddress bool) {
+	if byAddress {
+		_ = g.reg.Pin(ep, name, time.Now())
+	}
+	g.reg.MarkTrusted(ep, true)
 }
 
 // sendTo dials the destination and sends. A device that is not trusted is never

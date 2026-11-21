@@ -24,6 +24,8 @@ type Device struct {
 	LastSeen time.Time
 	// Trusted is set after an authenticated connection proves the device is trusted.
 	Trusted bool
+	// Pinned entries never expire while the application runs (see Pin).
+	Pinned bool
 }
 
 // Registry is an ephemeral list of discovered devices. Entries expire after
@@ -58,6 +60,40 @@ func (r *Registry) Observe(a Announcement, now time.Time) error {
 	}
 	r.devices[a.Addr] = &Device{Name: a.Name, Addr: a.Addr, LastSeen: a.Seen}
 	return nil
+}
+
+// Pin adds the device at addr to the list, or keeps the entry it already has,
+// and keeps it there without answers until Unpin. It is used for a device the
+// person connected to by address: such a device may be on a network whose
+// announcements never reach this one. Nothing is persisted, so a pinned entry
+// lasts until the application closes.
+func (r *Registry) Pin(addr netip.AddrPort, name string, now time.Time) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if d, ok := r.devices[addr]; ok {
+		d.Pinned = true
+		if name != "" {
+			d.Name = name
+		}
+		return nil
+	}
+	if len(r.devices) >= r.capacity {
+		r.pruneLocked(now)
+	}
+	if len(r.devices) >= r.capacity {
+		return fmt.Errorf("discovered device list is full: %w", apperr.ErrLimitExceeded)
+	}
+	r.devices[addr] = &Device{Name: name, Addr: addr, LastSeen: now, Pinned: true}
+	return nil
+}
+
+// Unpin gives the entry at addr back the normal expiry rule, if it is listed.
+func (r *Registry) Unpin(addr netip.AddrPort) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if d, ok := r.devices[addr]; ok {
+		d.Pinned = false
+	}
 }
 
 // Prune removes expired entries and returns how many were removed.
@@ -96,6 +132,9 @@ func (r *Registry) MarkTrusted(addr netip.AddrPort, trusted bool) {
 }
 
 func (r *Registry) expired(d *Device, now time.Time) bool {
+	if d.Pinned {
+		return false
+	}
 	return now.Sub(d.LastSeen) > r.ttl
 }
 

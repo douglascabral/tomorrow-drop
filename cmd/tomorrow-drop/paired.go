@@ -58,6 +58,7 @@ func (g *gui) unpairDevice(peer trust.Peer) error {
 		if bytes.Equal(p.Key, peer.Key) {
 			delete(g.paired, ep)
 			g.reg.MarkTrusted(ep, false)
+			g.reg.Unpin(ep)
 		}
 	}
 	g.pairedMu.Unlock()
