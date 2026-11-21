@@ -29,15 +29,24 @@ docker run --rm \
 	-v "$root":/src:ro \
 	-v tomorrow-drop-gomod:/go/pkg/mod \
 	-v "$stage/out":/out \
-	-e CGO_ENABLED=1 -e GOOS=linux -e GOARCH=amd64 -e CC=x86_64-linux-gnu-gcc \
-	-e PKG_CONFIG_LIBDIR=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig \
+	-e CGO_ENABLED=1 -e GOOS=linux -e GOARCH=amd64 \
 	"$image" /bin/sh -c '
 		set -e
-		dpkg --add-architecture amd64
+		# The image matches the machine: on an x86_64 machine (a Linux CI runner)
+		# the build is native; on Apple Silicon it cross-compiles for amd64.
 		apt-get update -qq
-		apt-get install -y -qq gcc-x86-64-linux-gnu libgl-dev:amd64 libx11-dev:amd64 \
-			libxrandr-dev:amd64 libxcursor-dev:amd64 libxinerama-dev:amd64 \
-			libxi-dev:amd64 libxxf86vm-dev:amd64 libxkbcommon-dev:amd64 >/dev/null
+		if [ "$(uname -m)" = x86_64 ]; then
+			apt-get install -y -qq gcc libgl-dev libegl-dev libx11-dev libxrandr-dev \
+				libxcursor-dev libxinerama-dev libxi-dev libxxf86vm-dev \
+				libxkbcommon-dev libwayland-dev >/dev/null
+		else
+			dpkg --add-architecture amd64
+			apt-get install -y -qq gcc-x86-64-linux-gnu libgl-dev:amd64 libx11-dev:amd64 \
+				libxrandr-dev:amd64 libxcursor-dev:amd64 libxinerama-dev:amd64 \
+				libxi-dev:amd64 libxxf86vm-dev:amd64 libxkbcommon-dev:amd64 >/dev/null
+			export CC=x86_64-linux-gnu-gcc
+			export PKG_CONFIG_LIBDIR=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+		fi
 		cp -r /src /work
 		cd /work
 		go build -trimpath -ldflags "-s -w" -o /out/tomorrow-drop ./cmd/tomorrow-drop
