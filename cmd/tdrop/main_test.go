@@ -19,6 +19,7 @@ func portugueseEnv(t *testing.T) env {
 	return env{
 		Tr:         tr,
 		ConfigPath: filepath.Join(t.TempDir(), "settings.json"),
+		Home:       filepath.Join(t.TempDir(), "home"),
 	}
 }
 
