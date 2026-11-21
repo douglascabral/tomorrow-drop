@@ -32,3 +32,12 @@ The bundle is built from the committed `go.mod` and `go.sum`. For the core binar
 ## Patches of the packaging tool
 
 `scripts/fyne-tools/build.sh` builds `build/tools/fyne-ios15` from `fyne.io/tools v1.7.4` with two patches: `ios-deployment-and-local-network.patch` (iOS deployment target and local-network key) and `android-manifest.patch` (adds `android.permission.WAKE_LOCK`, needed to keep the screen on, and the share targets that let other apps send to Tomorrow Drop, see `docs/MOBILE.md`).
+
+## Linux (.deb) and Windows (.exe)
+
+- `make package-linux` builds `dist/TomorrowDrop-linux-amd64.deb`. The program is compiled for amd64 inside the `fyne-cross` Linux image, then packed with `dpkg-deb` with its menu entry, its icon and the libraries it needs. Install with `sudo apt install ./dist/TomorrowDrop-linux-amd64.deb`.
+- `make package-windows` builds `dist/TomorrowDrop-windows-amd64.exe`. It is cross-compiled with MinGW inside the same image, and the icon is embedded in the file. It is a GUI program (no console window).
+
+Both need Docker running (on macOS, Colima or Docker Desktop). The first run downloads the image (about 4 GB) and the cross-compilers.
+
+Limits: the `.deb` is not signed, and the `.exe` is not code-signed, so Windows SmartScreen may warn until it is signed with a certificate. The dependency list of the `.deb` follows the libraries Fyne uses on Linux; it was not checked with `readelf` yet.
