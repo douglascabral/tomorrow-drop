@@ -16,8 +16,8 @@ struct HomeView: View {
                     Text(L.t("Transferred. Used. Done.", "Transferiu. Usou. Pronto.")).font(.subheadline).italic().foregroundColor(.secondary)
                     Text("\(L.t("This device", "Este dispositivo")): \(core.state.address)")
                         .font(.system(.footnote, design: .monospaced)).foregroundColor(.secondary)
-                    Text(L.t("Found by other devices only while the app is open.",
-                             "Encontrado por outros dispositivos somente com o app aberto."))
+                    Text(L.t("Visible only while the app is open.",
+                             "Visível só com o app aberto."))
                         .font(.caption2).foregroundColor(.secondary).multilineTextAlignment(.center)
                     Button(L.t("View my fingerprint", "Ver minha impressão digital")) { showFingerprint = true }
                         .font(.footnote)
