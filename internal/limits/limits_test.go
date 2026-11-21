@@ -12,6 +12,8 @@ func TestLimitsArePositive(t *testing.T) {
 		"MaxFileNameBytes":       MaxFileNameBytes,
 		"MaxFilesPerOffer":       MaxFilesPerOffer,
 		"MaxTextBytes":           MaxTextBytes,
+		"MaxFileBytes":           MaxFileBytes,
+		"MaxOfferBytes":          MaxOfferBytes,
 		"MaxConcurrentTransfers": MaxConcurrentTransfers,
 		"MaxDiscoveredDevices":   MaxDiscoveredDevices,
 	}

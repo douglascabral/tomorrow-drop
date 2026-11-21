@@ -20,5 +20,8 @@
   "error.unknown": "An unexpected error occurred.",
   "cli.erro_ler": "could not read the configuration: %s",
   "error.no_route": "No network route is available for discovery.",
-  "error.rate_limited": "Too many requests. Wait a moment and try again."
+  "error.rate_limited": "Too many requests. Wait a moment and try again.",
+  "error.declined": "The recipient declined the transfer.",
+  "error.integrity": "The received data did not match its checksum. Nothing was saved.",
+  "error.busy": "The recipient is busy with other transfers. Try again later."
 }

@@ -21,6 +21,9 @@ var (
 	ErrNotTrusted      = errors.New("device not trusted")
 	ErrNoRoute         = errors.New("no network route")
 	ErrRateLimited     = errors.New("too many requests")
+	ErrDeclined        = errors.New("transfer declined")
+	ErrIntegrity       = errors.New("integrity check failed")
+	ErrBusy            = errors.New("receiver busy")
 )
 
 // keys maps each sentinel to its translation key (see internal/i18n/locales).
@@ -39,6 +42,9 @@ var keys = []struct {
 	{ErrNotTrusted, "error.not_trusted"},
 	{ErrNoRoute, "error.no_route"},
 	{ErrRateLimited, "error.rate_limited"},
+	{ErrDeclined, "error.declined"},
+	{ErrIntegrity, "error.integrity"},
+	{ErrBusy, "error.busy"},
 }
 
 // MessageKey returns the translation key for err, so interfaces can show a

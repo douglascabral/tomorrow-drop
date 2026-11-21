@@ -13,6 +13,10 @@ const (
 	MaxFileNameBytes = 255
 	// MaxFilesPerOffer is the maximum number of files in one offer.
 	MaxFilesPerOffer = 1000
+	// MaxFileBytes is the maximum size of a single file in an offer.
+	MaxFileBytes = 16 << 30
+	// MaxOfferBytes is the maximum total size of an offer.
+	MaxOfferBytes = 64 << 30
 	// MaxTextBytes is the maximum size of a transferred text or link.
 	MaxTextBytes = 1 << 20
 	// MaxConcurrentTransfers is the number of simultaneous transfers.
