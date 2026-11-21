@@ -1,0 +1,6 @@
+# Keep line endings as LF in the repository and in every checkout, including
+# Windows: gofmt reports CRLF files as unformatted, and the shell scripts
+# (scripts/*.sh) do not run with CRLF.
+* text=auto eol=lf
+*.sh text eol=lf
+*.go text eol=lf
