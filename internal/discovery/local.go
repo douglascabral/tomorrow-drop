@@ -1,14 +1,12 @@
-package main
+package discovery
 
 import (
 	"net"
 	"net/netip"
-
-	"tomorrow-drop/internal/discovery"
 )
 
-// localAddresses returns this device's addresses, as seen by the network stack.
-func localAddresses() []netip.Addr {
+// LocalAddresses returns this device's addresses, as seen by the network stack.
+func LocalAddresses() []netip.Addr {
 	return localAddressesFrom(net.InterfaceAddrs, outgoingAddress)
 }
 
@@ -41,7 +39,7 @@ func localAddressesFrom(list func() ([]net.Addr, error), route func() (netip.Add
 // the local network. Connecting a UDP socket sends nothing.
 func outgoingAddress() (netip.Addr, error) {
 	conn, err := net.DialUDP("udp4", nil, net.UDPAddrFromAddrPort(
-		netip.AddrPortFrom(netip.AddrFrom4([4]byte{255, 255, 255, 255}), uint16(discovery.DefaultPort)))) //nolint:gosec // G115: port constant
+		netip.AddrPortFrom(netip.AddrFrom4([4]byte{255, 255, 255, 255}), uint16(DefaultPort)))) //nolint:gosec // G115: port constant
 	if err != nil {
 		return netip.Addr{}, err
 	}

@@ -223,3 +223,18 @@ func FormatBytes(n int64) string {
 	}
 	return fmt.Sprintf("%.1f %s", f, units[i])
 }
+
+// FingerprintBlock breaks a grouped fingerprint (sixteen groups of four) into
+// four lines of four groups, so it is read and compared in short pieces and does
+// not depend on the text wrapping to fit.
+func FingerprintBlock(grouped string) string {
+	groups := strings.Fields(grouped)
+	if len(groups) != 16 {
+		return grouped
+	}
+	lines := make([]string, 0, 4)
+	for i := 0; i < len(groups); i += 4 {
+		lines = append(lines, strings.Join(groups[i:i+4], " "))
+	}
+	return strings.Join(lines, "\n")
+}

@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 	"unicode/utf8"
+
+	"tomorrow-drop/internal/identity"
 )
 
 // The announced name is the device name and its system, joined for people to
@@ -40,5 +42,31 @@ func TestDeviceLabelFitsTheDiscoveryNameLimit(t *testing.T) {
 	}
 	if !utf8.ValidString(got) {
 		t.Fatalf("truncation split a character: %q", got)
+	}
+}
+
+// A fingerprint is shown in four short lines, so it never depends on the text
+// wrapping to fit: it is read and compared group by group on both devices.
+func TestFingerprintBlockHasFourShortLines(t *testing.T) {
+	id, err := identity.Generate()
+	if err != nil {
+		t.Fatal(err)
+	}
+	grouped := id.Fingerprint().Grouped()
+	block := FingerprintBlock(grouped)
+	lines := strings.Split(block, "\n")
+	if len(lines) != 4 {
+		t.Fatalf("lines = %d, want 4: %q", len(lines), block)
+	}
+	for _, l := range lines {
+		if len(l) > 19 {
+			t.Fatalf("line %q is longer than 19 characters", l)
+		}
+	}
+	if strings.Join(strings.Fields(block), "") != id.Fingerprint().Hex() {
+		t.Fatalf("the block changed the fingerprint: %q", block)
+	}
+	if FingerprintBlock("—") != "—" {
+		t.Fatalf("a placeholder must stay as it is")
 	}
 }
