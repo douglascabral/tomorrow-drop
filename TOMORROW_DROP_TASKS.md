@@ -27,13 +27,13 @@
 
 ## 03 — Discovery and connectivity
 
-[   ] 017. Define a versioned UDP format for `DISCOVER` and `ANNOUNCE`, with strict validation, maximum size and no sensitive information.
-[   ] 018. Implement a UDP discovery listener while the application is available, with preferably unicast responses, per-origin rate limiting and a short random delay.
-[   ] 019. Send `DISCOVER` immediately when the application opens/activates and when Refresh is clicked.
-[   ] 020. Implement periodic queries every 30 seconds only while the application is visible and available; restart the counter after Refresh and limit repeated clicks.
-[   ] 021. Suspend periodic queries during transfers and stop discovery when the application is minimized or in the background.
-[   ] 022. Implement an ephemeral list of discovered devices, entry update/expiration and visual distinction between discovered and trusted devices.
-[   ] 023. Implement manual connection by IP:port with input validation and the same TLS authentication as the automatic flow.
+[x] 017. Define a versioned UDP format for `DISCOVER` and `ANNOUNCE`, with strict validation, maximum size and no sensitive information.
+[x] 018. Implement a UDP discovery listener while the application is available, with preferably unicast responses, per-origin rate limiting and a short random delay.
+[x] 019. Send `DISCOVER` immediately when the application opens/activates and when Refresh is clicked.
+[x] 020. Implement periodic queries every 30 seconds only while the application is visible and available; restart the counter after Refresh and limit repeated clicks.
+[x] 021. Suspend periodic queries during transfers and stop discovery when the application is minimized or in the background.
+[x] 022. Implement an ephemeral list of discovered devices, entry update/expiration and visual distinction between discovered and trusted devices.
+[x] 023. Implement manual connection by IP:port with input validation and the same TLS authentication as the automatic flow.
 [   ] 024. Test discovery and connectivity on home Wi-Fi and enterprise networks: same VLAN, blocked broadcast, client isolation, multiple interfaces and no route.
 
 ## 04 — Protocol and transfer

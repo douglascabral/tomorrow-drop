@@ -5,7 +5,7 @@ This document defines the versioned Tomorrow Drop protocol. The implementation i
 ## 1. Overview
 
 - Transport: TCP with TLS 1.3 (tasks 010–011). Identity authentication happens in the pairing and trust layer, not only through TLS.
-- Discovery: UDP, `DISCOVER` and `ANNOUNCE` datagrams (task 017, not yet specified in detail).
+- Discovery: UDP, `DISCOVER` and `ANNOUNCE` datagrams. Format and rules in [DISCOVERY.md](DISCOVERY.md) (task 017).
 - Control message encoding: UTF-8 JSON, inside length-prefixed frames.
 
 ## 2. Framing
