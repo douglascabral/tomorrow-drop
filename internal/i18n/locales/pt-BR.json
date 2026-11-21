@@ -1,0 +1,22 @@
+{
+  "app.nome": "Tomorrow Drop",
+  "app.slogan": "Transferiu. Usou. Pronto.",
+  "cli.versao": "tdrop %s (protocolo %d)",
+  "cli.uso": "uso: tdrop version | tdrop config language [auto|pt-BR|en]",
+  "cli.idioma_atual": "idioma: %s",
+  "cli.idioma_salvo": "idioma salvo: %s",
+  "cli.idioma_invalido": "idioma inválido: %s (use auto, pt-BR ou en)",
+  "cli.erro_salvar": "não foi possível salvar a configuração: %s",
+  "gui.indisponivel": "a interface gráfica ainda não está disponível nesta versão",
+  "error.malformed": "Dados malformados.",
+  "error.limit_exceeded": "Um limite de tamanho ou quantidade foi excedido.",
+  "error.timeout": "A operação excedeu o tempo limite.",
+  "error.canceled": "A operação foi cancelada.",
+  "error.unauthorized": "Esta ação não é permitida no momento.",
+  "error.identity_changed": "A identidade do dispositivo não corresponde à esperada.",
+  "error.version_mismatch": "O outro dispositivo usa uma versão de protocolo incompatível.",
+  "error.already_trusted": "Este dispositivo já é confiável.",
+  "error.not_trusted": "Este dispositivo não é confiável.",
+  "error.unknown": "Ocorreu um erro inesperado.",
+  "cli.erro_ler": "não foi possível ler a configuração: %s"
+}
