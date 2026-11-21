@@ -42,6 +42,53 @@ On desktop every screen is a centered column of at most 960 px (`maxWidthLayout`
 - A failed or cancelled transfer shows an error mark; only a completed one shows the success mark (`showOutcome`, `TestFailedTransferShowsAnErrorMark`).
 - A connection that ends during a transfer reads "The connection ended before the transfer finished." A folder that cannot be written reads "The app cannot write to this folder. Check its permissions." (`apperr.MessageKey`, `TestMessageKeyNamesConnectionAndPermissionProblems`).
 
+## 2.5 Usability decisions
+
+Terms. One word for one idea: a device is **paired** (not "trusted"), the action is **Pair** / **Unpair**. A device that is not paired reads "Tap to pair". Counts agree with the number ("1 file", "2 files"; `plural`). A request to send files reads "Receive files?" and "X wants to send you:"; it does not say the files were received.
+
+Who a device is. A device announces only a name and a port, so it is known only after an authenticated connection. From then on its **paired name** replaces the name it announces in the list (`paired.go`); the device screen shows the real pairing date and fingerprint; and Unpair works from the device screen and from the list of paired devices, even when the device is offline (`TestPairedNameReplacesTheAnnouncedNameInTheList`, `TestUnpairRemovesTrustFromTheDevice`). Addresses are shown without the usual port.
+
+Screens.
+- Home: an empty list says it is looking and what to do ("Open Tomorrow Drop on the other device, on the same Wi-Fi network"). The logo is smaller on a phone.
+- Send: Send says "Send" and stays disabled until there is a recipient and something to send. Files can be dragged onto the window on desktop (`droppedPaths`).
+- Pairing and requests: going back declines, so the other device is not left waiting (`TestBackOnADecisionScreenDeclines`). The name of a new device starts from the name it announces. A pairing the person started ends on the device screen, not in an alert.
+- Progress: Cancel works on a reception too, and a cancelled or cut reception shows a result instead of leaving the ring on screen.
+- Result: the header is neutral ("Transfer"); "Open folder" is only on desktop.
+- Manual connection: Enter connects; the card keeps its natural height.
+- Settings: languages are named for people (Automatic, Português (Brasil), English).
+- Fingerprints are shown in four lines of four groups, so they can be compared piece by piece.
+- This device's fingerprint is one tap away, right below the address: a "View my fingerprint" button on the home screen and on the screen of a paired device. It opens the whole fingerprint in four lines, with a button to copy it. No screen shows only the start of it, so nobody is tempted to compare just the beginning (`TestHomeOffersThisDevicesFingerprintBelowItsAddress`, `TestPairedDeviceScreenOffersThisDevicesFingerprintBelowTheAddress`, `TestFingerprintViewShowsTheWholeFingerprint`). The card at the end of the device screen is the other device's fingerprint.
+
+Phone layout. The padding that makes controls easy to tap would make every line of text as high as a button, so single lines of text (names, titles, addresses) are laid out compactly (`gui.compact`, a theme override) and controls keep the large size. Long text that wraps is not compacted, because a theme override reports its height for one line. Names are cut with an ellipsis instead of wrapping.
+
+## 2.6 Renaming and one-sided unpairing
+
+- A paired device can be renamed, from the list of paired devices and from its own screen (Rename). The new name shows at once (`TestRenamingAPairedDeviceUpdatesTheList`).
+- The home list shows the paired name at once, also after a restart: the last address of each paired device is kept in `paired-addresses.json` and used only to name a device that discovery finds there. The device is not shown as paired until a connection proves it (`TestRenameReachesADeviceSeenByDiscoveryOnly`).
+- If one device unpairs and the other still has it paired, the next pairing used to fail with a generic error. The connection from the device that no longer trusts is recognized: a pairing message on a trusted connection is refused and named (`error.peer_wants_to_pair`, `internal/transport`, `TestPairingMessageOnATrustedConnectionIsNamed`). The device that still has the other paired is asked whether to unpair it too, so the pairing can be done again (`askUnpairOnRequest`, `TestPeerAskingToPairAgainIsOfferedAnUnpair`). Nothing is unpaired without the person's answer.
+
+## 2.7 Drop area
+
+The area where files are dropped or chosen keeps room around its text and its button (`dropCard`, `TestDropCardHasRoomAroundItsContent`).
+
+The clipboard can send pictures (screenshots). The Fyne clipboard API reads text only, so each platform reads the picture with its own code (`clipboard_darwin.go`, `clipboard_android.go`, `clipboard_ios.go`; `clipboard_other.go` reports none). A picture is shown with its size, asked for, and sent as a file named `Captura-<date>.png` (or the picture's own format on Android), staged in `<home>/clipboard` (`imageSpec`, `TestClipboardImageBecomesAFileToSend`). Text is sent when there is no picture. Tested on macOS with a picture on the clipboard; Android and iOS are type-checked against the NDK and the iPhone SDK, not run on a device yet (task 059).
+
+## 2.8 Device screen actions
+
+The screen of a paired device offers Send files, Send text, Send clipboard (the picture or text on the clipboard, with the same confirmation as on the send screen) and Receive, then Rename and Unpair.
+
+## 2.9 Sharing from other apps
+
+On Android, what another app shares is taken when the app comes to the foreground and waits on the home screen ("Choose a device to send: 2 files"). Choosing a paired device sends it (`TestSharedFileWaitsForADevice`, `TestSharedTextWaitsForADevice`, `TestChoosingADeviceSendsTheShareOnce`). Unsafe names are replaced (`TestSharedNamesAreSafe`).
+
+## 2.10 Files copied in the file manager
+
+"Send clipboard" sends the files copied in the file manager first, then a picture, then text.
+- macOS: the copied files are read from the pasteboard by their paths and sent from where they are (`clipboardPaths`, `previewClipboardPaths`). A folder is refused (`TestCopiedFilesArePlannedAsFiles`).
+- Android: the copied files come as content, through the content resolver, and are copied into the application's folder before sending (`clipboardContents`, `previewClipboardContents`).
+- iOS: no files are given to other apps through the pasteboard; only pictures and text are sent.
+- Windows and Linux: not implemented yet. The clipboard file list (CF_HDROP on Windows; text/uri-list or x-special/gnome-copied-files on Linux) must be read by native code on each system.
+
 ## 3. Availability (task 053)
 
 The window drives availability through its lifecycle events:

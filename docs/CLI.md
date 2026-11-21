@@ -15,12 +15,23 @@ Tasks 037 to 044 (block 05). Implementation in `cmd/tdrop`. The CLI uses the sam
 | `tdrop send --stdin --to <destination>` | Sends the text read from standard input. |
 | `tdrop receive [--listen ADDR] [--out DIR] [--name NAME]` | Waits for one connection, pairs or asks to accept each offer, then exits. |
 | `tdrop daemon [--listen ADDR] [--out DIR] [--name NAME] [--auto-accept-trusted]` | Same as `receive`, but keeps running until interrupted. |
+| `tdrop help` (also `--help`, `-h`) | Lists every command. |
 | `tdrop version` | Prints the version and the protocol version. |
 | `tdrop config language [auto\|pt-BR\|en]` | Shows or sets the language. |
 
 Defaults: TLS listener on `0.0.0.0:47521`; discovery on UDP `47520`; received files go to the Downloads folder.
 
 `<destination>` is an `IP:port` (IPv4 or `[IPv6]:port`) or the name of a device found by discovery. Names are looked up with a two-second scan.
+
+## Options and messages
+
+- Options can come before, between or after the arguments: `tdrop send a.txt --to 10.0.0.2:47521` works as well as `tdrop send --to 10.0.0.2:47521 a.txt`. `--` ends the options.
+- A mistake in a command prints the usage of that command (for example `usage: tdrop send <file>... --to <device>`), and an unknown command points to `tdrop help`.
+- The words match the application: a device is **paired**, and `trust remove` unpairs it. The command names are kept, so scripts keep working.
+- `discover` does not list this device.
+- Before accepting, `receive` and `daemon` show who sends (the name given when pairing, or the start of the fingerprint for a device that is not paired), how many files and how large, and each file name and size.
+- Progress reads `file: 42% (1.0 MB of 2.4 MB)`; counts agree with the number ("1 file", "2 files").
+- A device that cannot be reached says so and what to check ("Could not reach the other device. Check that Tomorrow Drop is open there and that both devices are on the same network."), instead of an unexpected error. Fingerprints are shown in four short lines.
 
 ## Exit codes
 

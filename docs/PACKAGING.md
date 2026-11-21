@@ -27,8 +27,8 @@ The target builds `build/tools/fyne-ios15` if it is missing (see "Patches of the
 
 ## Reproducibility
 
-The bundle is built from the committed `go.mod` and `go.sum`. For the core binaries, `CGO_ENABLED=0 go build -trimpath` gives reproducible output (see `docs/COMPILACAO.md`). The graphical binary needs cgo, so its output is not byte-identical across machines.
+The bundle is built from the committed `go.mod` and `go.sum`. For the core binaries, `CGO_ENABLED=0 go build -trimpath` gives reproducible output (see `docs/BUILD.md`). The graphical binary needs cgo, so its output is not byte-identical across machines.
 
 ## Patches of the packaging tool
 
-`scripts/fyne-tools/build.sh` builds `build/tools/fyne-ios15` from `fyne.io/tools v1.7.4` with two patches: `ios-deployment-and-local-network.patch` (iOS deployment target and local-network key) and `android-keep-screen-on.patch` (adds `android.permission.WAKE_LOCK` to the Android manifest, needed to keep the screen on, see `docs/MOBILE.md`).
+`scripts/fyne-tools/build.sh` builds `build/tools/fyne-ios15` from `fyne.io/tools v1.7.4` with two patches: `ios-deployment-and-local-network.patch` (iOS deployment target and local-network key) and `android-manifest.patch` (adds `android.permission.WAKE_LOCK`, needed to keep the screen on, and the share targets that let other apps send to Tomorrow Drop, see `docs/MOBILE.md`).

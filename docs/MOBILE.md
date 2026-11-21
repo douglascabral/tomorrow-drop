@@ -74,6 +74,15 @@ Both native builds compile (`GOOS=android` with the NDK clang and `GOOS=ios` wit
 
 On phones the app keeps the screen on while it is in the foreground, and leaving the foreground lets it turn off, which interrupts transfers (task 057). Covered by `TestPhoneKeepsTheScreenOnWhileTheAppIsOpen`; desktop is unchanged (`TestDesktopDoesNotChangeScreenBlanking`).
 
-- Android: a screen-bright wake lock (`screenawake_android.go`, JNI through `PowerManager`). It needs `android.permission.WAKE_LOCK`, which the Fyne packaging tool does not declare, so `scripts/fyne-tools/android-keep-screen-on.patch` adds it. The window flag that Fyne uses (`SetDisableScreenBlanking`) did not take effect on the test phone (`mHoldScreenWindow=null`), so it is not used. Checked on a Motorola G75: the lock is held while the app is open, the screen stayed awake for 75 s with a 60 s timeout, and the lock is released when the app leaves the foreground.
+- Android: a screen-bright wake lock (`screenawake_android.go`, JNI through `PowerManager`). It needs `android.permission.WAKE_LOCK`, which the Fyne packaging tool does not declare, so `scripts/fyne-tools/android-manifest.patch` adds it. The window flag that Fyne uses (`SetDisableScreenBlanking`) did not take effect on the test phone (`mHoldScreenWindow=null`), so it is not used. Checked on a Motorola G75: the lock is held while the app is open, the screen stayed awake for 75 s with a 60 s timeout, and the lock is released when the app leaves the foreground.
 - iOS/iPadOS: `UIApplication.idleTimerDisabled` (`screenawake_ios.go`). Compiles; not checked on a device.
 - Desktop: no change.
+
+## Share from other apps (Android)
+
+Tomorrow Drop appears in the share menu of other apps (`ACTION_SEND` and `ACTION_SEND_MULTIPLE`, any type), so a screenshot, a file or a text can be sent straight from the app that shows it. The manifest declares the filter (`scripts/fyne-tools/android-manifest.patch`). When the app comes to the foreground it reads what was shared (`share_android.go`, through the content resolver), copies the files into its folder, and shows on the home screen what waits to be sent: the person then chooses a paired device, and the share is sent (`share.go`). A share is sent once. Checked on a Motorola G75: the app is listed for shared pictures (`cmd package query-activities`). Not yet checked: choosing a device and receiving the file on the other side from the share menu, and iOS (no share extension yet).
+
+## Saving a received file on Android
+
+Saving a received file opens the system's storage picker, which takes the app to the background. Leaving the foreground cancels the running operations (task 057), so a reception was cut before its result reached the sender: the sender reported "the connection ended before the transfer finished". While the picker is open, the cancellation is skipped (`gui.pickingFile`, `TestPickerKeepsTheReceptionRunning`). Still to check on a device: the sender waits 30 s for the result, so a person who takes longer than that in the picker makes the sender fail with a timeout. Asking for the location before the data is sent would remove that limit.
+
