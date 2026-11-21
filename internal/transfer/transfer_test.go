@@ -627,3 +627,35 @@ func waitFor(t testing.TB, cond func() bool) {
 }
 
 var _ = bytes.Equal
+
+func TestReceiverReportsProgressUpToTheTotal(t *testing.T) {
+	ctx := testCtx(t)
+	sender, receiver := pairedSessions(t, ctx)
+	path, _ := randomFile(t, t.TempDir(), "p.bin", 100<<10)
+	dest := t.TempDir()
+
+	var last int64 = -1
+	var total int64
+	r, err := NewReceiver(ReceiverConfig{
+		Decide:      acceptAll,
+		StagingDir:  t.TempDir(),
+		DestDir:     dest,
+		Destination: DesktopDestination{Dir: dest},
+		OnProgress: func(p ReceiveProgress) {
+			if p.Received < last {
+				t.Errorf("progress went backwards: %d -> %d", last, p.Received)
+			}
+			last = p.Received
+			total = p.Total
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, serr, _, rerr := run(t, ctx, sender, SendSpec{Kind: KindFile, Paths: []string{path}}, nil, r, receiver); serr != nil || rerr != nil {
+		t.Fatalf("send=%v receive=%v", serr, rerr)
+	}
+	if total != 100<<10 || last != total {
+		t.Fatalf("progress ended at %d of %d, want the whole file", last, total)
+	}
+}

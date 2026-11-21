@@ -34,6 +34,17 @@ type ReceiverConfig struct {
 	Destination Destination
 	// MaxConcurrent limits simultaneous transfers. Zero means the default.
 	MaxConcurrent int
+	// OnProgress, when set, is called as data arrives. Optional.
+	OnProgress func(ReceiveProgress)
+}
+
+// ReceiveProgress reports how much of the incoming offer has arrived.
+type ReceiveProgress struct {
+	OfferID  string
+	Item     int
+	Name     string
+	Received int64
+	Total    int64
 }
 
 // Receiver accepts transfers on trusted sessions.
@@ -162,6 +173,11 @@ func (r *Receiver) receiveItems(ctx context.Context, s *transport.Session, offer
 		return items, err
 	}
 	rc := &receiveState{offerID: offer.ID, items: items}
+	if r.cfg.OnProgress != nil {
+		rc.onProgress = func(id string, item int, name string, written, size, total int64) {
+			r.cfg.OnProgress(ReceiveProgress{OfferID: id, Item: item, Name: name, Received: rc.received(item, written), Total: total})
+		}
+	}
 	for {
 		msg, err := s.ReceiveWithin(r.idleTimeout)
 		if err != nil {
@@ -188,9 +204,30 @@ func createStaging(dir string, offer Offer) ([]*staged, error) {
 
 // receiveState tracks which item the sender is on.
 type receiveState struct {
-	offerID string
-	items   []*staged
-	current int
+	offerID    string
+	items      []*staged
+	current    int
+	onProgress func(offerID string, item int, name string, written, size, total int64)
+}
+
+// total is the size of the whole offer.
+func (rc *receiveState) total() int64 {
+	var sum int64
+	for _, it := range rc.items {
+		sum += it.size
+	}
+	return sum
+}
+
+// received is the bytes of the whole offer received so far.
+func (rc *receiveState) received(item int, written int64) int64 {
+	var sum int64
+	for i, it := range rc.items {
+		if i < item {
+			sum += it.size
+		}
+	}
+	return sum + written
 }
 
 // handle applies one incoming message. It reports true when the transfer is over.
@@ -223,6 +260,9 @@ func (rc *receiveState) data(msg protocol.Message) error {
 	}
 	_, _ = it.hash.Write(d.Data)
 	it.written += int64(len(d.Data))
+	if rc.onProgress != nil {
+		rc.onProgress(rc.offerID, rc.current, it.name, it.written, it.size, rc.total())
+	}
 	return nil
 }
 
