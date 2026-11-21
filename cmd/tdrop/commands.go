@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"tomorrow-drop/internal/discovery"
 	"tomorrow-drop/internal/identity"
 	"tomorrow-drop/internal/limits"
+	"tomorrow-drop/internal/pairing"
 	"tomorrow-drop/internal/protocol"
 	"tomorrow-drop/internal/transfer"
 	"tomorrow-drop/internal/transport"
@@ -163,39 +165,28 @@ func (c *cmd) pairCmd(args []string) error {
 	return c.pairWith(s, id, *name)
 }
 
-// pairWith runs the mutual confirmation on a provisional session. Both people
-// compare the fingerprints and confirm; trust is stored only if both sides
-// confirmed in this session.
+// pairWith runs the shared pairing flow with the terminal as the person's answer.
 func (c *cmd) pairWith(s *transport.Session, id *identity.Identity, name string) error {
-	p, err := s.Pairing()
-	if err != nil {
-		return err
-	}
-	remote, err := identity.FingerprintOf(s.PeerKey())
-	if err != nil {
-		return err
-	}
-	c.say("%s", c.e.Tr.T("cli.pair_compare", id.Fingerprint().Grouped(), remote.Grouped()))
-	if !c.e.ask(c.stdout, c.e.Tr.T("cli.pair_confirm")) {
+	chosen := name
+	got, err := pairing.Run(c.ctx, s, id, c.trustStore(), pairing.Prompts{
+		Confirm: func(local, remote identity.Fingerprint) bool {
+			c.say("%s", c.e.Tr.T("cli.pair_compare", local.Grouped(), remote.Grouped()))
+			return c.e.ask(c.stdout, c.e.Tr.T("cli.pair_confirm"))
+		},
+		Name: func(identity.Fingerprint) string {
+			if chosen != "" {
+				return chosen
+			}
+			return c.e.readLine(c.stdout, c.e.Tr.T("cli.pair_name"))
+		},
+	})
+	if errors.Is(err, pairing.ErrCancelled) {
 		return cliError{code: exitRefused, key: "cli.pair_cancelled"}
 	}
-	p.ConfirmLocal()
-	if err := transport.ExchangePairing(c.ctx, s, p); err != nil {
+	if err != nil {
 		return err
 	}
-	if name == "" {
-		name = strings.TrimSpace(c.e.readLine(c.stdout, c.e.Tr.T("cli.pair_name")))
-	}
-	if name == "" {
-		name = remote.Hex()[:8]
-	}
-	if err := trust.CommitPairing(c.trustStore(), p, name); err != nil {
-		return err
-	}
-	if err := s.Promote(c.trustStore()); err != nil {
-		return err
-	}
-	c.say("%s", c.e.Tr.T("cli.pair_done", name))
+	c.say("%s", c.e.Tr.T("cli.pair_done", got))
 	return nil
 }
 
