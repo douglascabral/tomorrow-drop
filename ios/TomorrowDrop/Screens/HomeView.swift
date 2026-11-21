@@ -88,7 +88,8 @@ struct HomeView: View {
 
 // PairedRow is a paired device on the home screen. Its actions (send, receive)
 // are on the device screen. A device whose address is not known yet cannot be
-// opened from here until it is connected to by IP once.
+// opened from here until it is connected to by IP once. Only two states are
+// shown: Online (green) when it answered its last check, Offline (red) otherwise.
 struct PairedRow: View {
     let paired: AppState.Paired
 
@@ -100,44 +101,46 @@ struct PairedRow: View {
         }
     }
 
+    private var online: Bool { paired.presence == "online" }
+
     private var label: some View {
-        HStack {
-            Image(systemName: statusIcon).foregroundColor(statusColor)
+        DeviceLine(
+            icon: online ? "checkmark.circle.fill" : "xmark.circle.fill",
+            iconColor: online ? .green : .red,
+            title: paired.name,
+            subtitle: paired.addr ?? L.t("No known address", "Sem endereço conhecido"),
+            status: online ? L.t("Online", "Online") : L.t("Offline", "Offline"),
+            statusColor: online ? .green : .red
+        )
+    }
+}
+
+// DeviceLine is the one layout of a device line, for paired and found devices:
+// icon, name and address, then the status. The icon column has a fixed width and
+// the status does not wrap, so the lines line up.
+struct DeviceLine: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let subtitle: String
+    let status: String
+    let statusColor: Color
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .foregroundColor(iconColor)
+                .frame(width: 24)
             VStack(alignment: .leading, spacing: 2) {
-                Text(paired.name)
-                Text(paired.addr ?? L.t("No known address", "Sem endereço conhecido"))
+                Text(title).lineLimit(1)
+                Text(subtitle)
                     .font(.system(.caption, design: .monospaced)).foregroundColor(.secondary)
+                    .lineLimit(1)
             }
-            Spacer()
-            Text(statusText).font(.footnote).foregroundColor(statusColor)
-        }
-    }
-
-    // statusText is the reachability of the device: Online, Offline, or Paired
-    // while it has not been checked yet.
-    private var statusText: String {
-        switch paired.presence {
-        case "online": return L.t("Online", "Online")
-        case "offline": return L.t("Offline", "Offline")
-        default: return L.t("Paired", "Pareado")
-        }
-    }
-
-    // Only a device that answered its last check is green. An offline one is
-    // red; one not checked yet is neutral, never green.
-    private var statusColor: Color {
-        switch paired.presence {
-        case "online": return .green
-        case "offline": return .red
-        default: return .secondary
-        }
-    }
-
-    private var statusIcon: String {
-        switch paired.presence {
-        case "online": return "checkmark.circle.fill"
-        case "offline": return "xmark.circle.fill"
-        default: return "circle"
+            Spacer(minLength: 8)
+            Text(status)
+                .font(.footnote).foregroundColor(statusColor)
+                .fixedSize()
         }
     }
 }
@@ -155,21 +158,17 @@ struct DeviceRow: View {
         }
     }
 
+    // A found device that is not paired yet. Its status is not a reachability
+    // state, so it keeps its own neutral text.
     private var label: some View {
-        HStack {
-            if device.paired {
-                Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-            } else {
-                Image(systemName: "desktopcomputer").foregroundColor(.secondary)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(device.name)
-                Text(device.addr).font(.system(.caption, design: .monospaced)).foregroundColor(.secondary)
-            }
-            Spacer()
-            Text(device.paired ? L.t("Paired", "Pareado") : L.t("Tap to pair", "Toque para parear"))
-                .font(.footnote).foregroundColor(device.paired ? .green : .secondary)
-        }
+        DeviceLine(
+            icon: "desktopcomputer",
+            iconColor: .secondary,
+            title: device.name,
+            subtitle: device.addr,
+            status: L.t("Tap to pair", "Toque para parear"),
+            statusColor: .secondary
+        )
     }
 }
 
