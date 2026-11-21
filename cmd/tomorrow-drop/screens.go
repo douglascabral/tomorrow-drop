@@ -175,13 +175,13 @@ func (g *gui) showSend(target string, preset *transfer.SendSpec) {
 			status.SetText(g.tr.T("gui.send.need_target"))
 			return
 		}
-		ctx, c := context.WithCancel(g.ctx)
-		cancel = c
+		ctx, done := g.beginOperation()
+		cancel = done
 		progress.Show()
 		cancelBtn.Show()
 		status.SetText(g.tr.T("gui.send.working"))
 		go func() {
-			defer c()
+			defer done()
 			err := g.sendTo(ctx, dest, spec, func(p transfer.Progress) {
 				g.onUI(func() { progress.SetValue(ui.ProgressFraction(p)) })
 			})

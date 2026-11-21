@@ -43,6 +43,7 @@ func main() {
 		os.Exit(1)
 	}
 	g.app = a
+	g.mobile = fyne.CurrentDevice().IsMobile()
 	g.win = a.NewWindow(tr.T("app.nome"))
 	g.win.Resize(fyne.NewSize(420, 640))
 

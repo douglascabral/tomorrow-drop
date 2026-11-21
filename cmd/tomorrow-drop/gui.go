@@ -48,6 +48,12 @@ type gui struct {
 
 	tlsPort  int
 	discPort int
+	boundMu  sync.Mutex
+	bound    int
+	mobile   bool
+	opMu     sync.Mutex
+	ops      map[int]context.CancelFunc
+	nextOp   int
 	queries  atomic.Int64
 	found    chan discovery.Announcement
 
@@ -76,6 +82,7 @@ func newGUI(ctx context.Context, tr *i18n.Bundle, home, cfgPath string) (*gui, e
 		reg:      discovery.NewRegistry(90*time.Second, limits.MaxDiscoveredDevices),
 		tlsPort:  defaultTLSPort,
 		discPort: discovery.DefaultPort,
+		ops:      map[int]context.CancelFunc{},
 	}
 	recv, err := transfer.NewReceiver(transfer.ReceiverConfig{
 		Decide:     g.askOffer,
@@ -109,6 +116,11 @@ func (g *gui) setAvailable(on bool) {
 		g.avail = nil
 	}
 	g.availMu.Unlock()
+	// Only mobile interrupts transfers on the way to the background (task 057).
+	// Desktop keeps the transfers already authorized (PRD §17.2).
+	if !on && g.mobile {
+		g.cancelOperations()
+	}
 	if err := g.ctl.SetVisible(on); err != nil {
 		g.logError(err)
 	}
@@ -138,8 +150,10 @@ func (g *gui) startListeners(ctx context.Context) {
 		g.logError(err)
 		return
 	}
+	g.setBoundTLSPort(ln.Addr().(*net.TCPAddr).Port)
 	go func() {
 		<-ctx.Done()
+		g.setBoundTLSPort(0)
 		_ = ln.Close()
 	}()
 	go func() {
@@ -148,9 +162,49 @@ func (g *gui) startListeners(ctx context.Context) {
 			if err != nil {
 				return
 			}
-			go g.handleIncoming(ctx, conn)
+			go g.handleIncoming(conn)
 		}
 	}()
+}
+
+// beginOperation starts a transfer or pairing that the application tracks. The
+// returned function ends it and must be called exactly once.
+func (g *gui) beginOperation() (context.Context, func()) {
+	ctx, cancel := context.WithCancel(g.ctx)
+	g.opMu.Lock()
+	g.nextOp++
+	id := g.nextOp
+	g.ops[id] = cancel
+	g.opMu.Unlock()
+	return ctx, func() {
+		g.opMu.Lock()
+		delete(g.ops, id)
+		g.opMu.Unlock()
+		cancel()
+	}
+}
+
+// cancelOperations interrupts every tracked operation.
+func (g *gui) cancelOperations() {
+	g.opMu.Lock()
+	defer g.opMu.Unlock()
+	for id, cancel := range g.ops {
+		cancel()
+		delete(g.ops, id)
+	}
+}
+
+// boundTLSPort returns the port of the incoming listener, or 0 when it is closed.
+func (g *gui) boundTLSPort() int {
+	g.boundMu.Lock()
+	defer g.boundMu.Unlock()
+	return g.bound
+}
+
+func (g *gui) setBoundTLSPort(port int) {
+	g.boundMu.Lock()
+	defer g.boundMu.Unlock()
+	g.bound = port
 }
 
 // collect moves discovery answers into the device list and refreshes it.
@@ -183,7 +237,9 @@ func (g *gui) logError(err error) {
 
 // handleIncoming runs one accepted connection: pairing for unknown devices,
 // receiving for trusted ones.
-func (g *gui) handleIncoming(ctx context.Context, conn net.Conn) {
+func (g *gui) handleIncoming(conn net.Conn) {
+	ctx, done := g.beginOperation()
+	defer done()
 	s, err := transport.Server(ctx, conn, g.id, g.store)
 	if err != nil {
 		return

@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/netip"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -106,5 +107,78 @@ func TestForegroundSendsQueryEvenWithinRefreshCooldown(t *testing.T) {
 
 	if n := g.queries.Load(); n != 2 {
 		t.Fatalf("queries after two foreground events = %d, want 2", n)
+	}
+}
+
+// Task 057: entering the background must close the incoming listener, so no
+// new connection is accepted; returning to the foreground must reopen it.
+func TestBackgroundClosesIncomingListenerAndForegroundReopensIt(t *testing.T) {
+	g := newTestGUI(t)
+	g.tlsPort = 0
+	g.discPort = 0
+
+	g.setAvailable(true)
+	port := g.boundTLSPort()
+	if port == 0 {
+		t.Fatalf("incoming listener did not bind while in the foreground")
+	}
+	if !canDial(port) {
+		t.Fatalf("incoming listener refused a connection in the foreground")
+	}
+
+	g.setAvailable(false)
+	if canDial(port) {
+		t.Fatalf("incoming listener still accepts connections in the background")
+	}
+
+	g.setAvailable(true)
+	port = g.boundTLSPort()
+	if !canDial(port) {
+		t.Fatalf("incoming listener did not reopen after returning to the foreground")
+	}
+	g.setAvailable(false)
+}
+
+func canDial(port int) bool {
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(port)), time.Second)
+	if err != nil {
+		return false
+	}
+	_ = conn.Close()
+	return true
+}
+
+// PRD §17.2: a desktop application that is minimized keeps the transfers that
+// were already authorized. Leaving the foreground must not cancel them.
+func TestDesktopBackgroundKeepsRunningOperations(t *testing.T) {
+	g := newTestGUI(t)
+	g.tlsPort = 0
+	g.discPort = 0
+	g.mobile = false
+
+	g.setAvailable(true)
+	ctx, done := g.beginOperation()
+	defer done()
+	g.setAvailable(false)
+
+	if ctx.Err() != nil {
+		t.Fatalf("minimizing the desktop window cancelled a running transfer: %v", ctx.Err())
+	}
+}
+
+// Task 057: on mobile, leaving the foreground interrupts transfers in progress.
+func TestMobileBackgroundCancelsRunningOperations(t *testing.T) {
+	g := newTestGUI(t)
+	g.tlsPort = 0
+	g.discPort = 0
+	g.mobile = true
+
+	g.setAvailable(true)
+	ctx, done := g.beginOperation()
+	defer done()
+	g.setAvailable(false)
+
+	if ctx.Err() == nil {
+		t.Fatalf("backgrounding a mobile app did not interrupt the running transfer")
 	}
 }
