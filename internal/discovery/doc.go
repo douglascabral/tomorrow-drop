@@ -1,2 +1,2 @@
-// Package discovery será responsável pela descoberta UDP na rede local (PRD §5).
+// Package discovery will implement UDP discovery on the local network (PRD §5).
 package discovery

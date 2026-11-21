@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func TestLimitesSaoPositivos(t *testing.T) {
-	valores := map[string]int64{
+func TestLimitsArePositive(t *testing.T) {
+	values := map[string]int64{
 		"MaxControlFrameBytes":   MaxControlFrameBytes,
 		"MaxDiscoveryDatagram":   MaxDiscoveryDatagram,
 		"MaxFileNameBytes":       MaxFileNameBytes,
@@ -15,21 +15,21 @@ func TestLimitesSaoPositivos(t *testing.T) {
 		"MaxConcurrentTransfers": MaxConcurrentTransfers,
 		"MaxDiscoveredDevices":   MaxDiscoveredDevices,
 	}
-	for nome, valor := range valores {
-		if valor <= 0 {
-			t.Errorf("%s = %d, esperado valor positivo", nome, valor)
+	for name, value := range values {
+		if value <= 0 {
+			t.Errorf("%s = %d, want a positive value", name, value)
 		}
 	}
 }
 
-func TestLimitesSaoCoerentes(t *testing.T) {
+func TestLimitsAreConsistent(t *testing.T) {
 	if MaxDiscoveryDatagram > MaxControlFrameBytes {
-		t.Errorf("datagrama UDP (%d) não pode exceder o quadro de controle (%d)", MaxDiscoveryDatagram, MaxControlFrameBytes)
+		t.Errorf("UDP datagram (%d) must not exceed the control frame (%d)", MaxDiscoveryDatagram, MaxControlFrameBytes)
 	}
 	if MaxControlFrameBytes > math.MaxUint32 {
-		t.Errorf("quadro de controle não cabe no cabeçalho de 32 bits")
+		t.Errorf("control frame does not fit in the 32-bit header")
 	}
 	if MaxFileNameBytes > 255 {
-		t.Errorf("nome de arquivo (%d bytes) excede o limite comum dos sistemas de arquivos", MaxFileNameBytes)
+		t.Errorf("file name (%d bytes) exceeds the common file system limit", MaxFileNameBytes)
 	}
 }

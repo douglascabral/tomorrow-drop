@@ -6,20 +6,20 @@ import (
 	"fmt"
 )
 
-// SessionID identifica uma sessão de conexão. Não é uma credencial de
-// autenticação: a identidade é provada pelo TLS e pela chave Ed25519.
+// SessionID identifies a connection session. It is not an authentication
+// credential: identity is proven by TLS and the Ed25519 key.
 type SessionID [16]byte
 
-// NewSessionID gera um identificador aleatório com crypto/rand.
+// NewSessionID generates a random identifier with crypto/rand.
 func NewSessionID() (SessionID, error) {
 	var id SessionID
 	if _, err := rand.Read(id[:]); err != nil {
-		return SessionID{}, fmt.Errorf("gerar sessão: %w", err)
+		return SessionID{}, fmt.Errorf("generate session: %w", err)
 	}
 	return id, nil
 }
 
-// String devolve o identificador em hexadecimal (32 caracteres).
+// String returns the identifier in hexadecimal (32 characters).
 func (id SessionID) String() string {
 	return hex.EncodeToString(id[:])
 }

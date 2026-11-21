@@ -1,7 +1,7 @@
 package protocol
 
-// PeerState é o estado de segurança de um par, conforme PRD v1.9, seção 10.
-// Uma conexão TLS estabelecida não implica StateTrusted.
+// PeerState is the security state of a peer, per PRD v1.9, section 10.
+// An established TLS connection does not imply StateTrusted.
 type PeerState int
 
 const (

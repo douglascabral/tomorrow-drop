@@ -6,29 +6,29 @@ import (
 	"tomorrow-drop/internal/apperr"
 )
 
-// Version é a versão do protocolo de transferência.
+// Version is the version of the transfer protocol.
 type Version uint16
 
-// CurrentVersion é a versão implementada por este build.
+// CurrentVersion is the version implemented by this build.
 const CurrentVersion Version = 1
 
-// SupportedVersions lista as versões que este build aceita.
+// SupportedVersions lists the versions this build accepts.
 var SupportedVersions = []Version{CurrentVersion}
 
-// Negotiate escolhe a maior versão presente em local e remote.
+// Negotiate chooses the highest version present in both local and remote.
 func Negotiate(local, remote []Version) (Version, error) {
-	melhor := Version(0)
-	encontrada := false
+	best := Version(0)
+	found := false
 	for _, l := range local {
 		for _, r := range remote {
-			if l == r && (!encontrada || l > melhor) {
-				melhor = l
-				encontrada = true
+			if l == r && (!found || l > best) {
+				best = l
+				found = true
 			}
 		}
 	}
-	if !encontrada {
-		return 0, fmt.Errorf("sem versão comum: %w", apperr.ErrVersionMismatch)
+	if !found {
+		return 0, fmt.Errorf("no common version: %w", apperr.ErrVersionMismatch)
 	}
-	return melhor, nil
+	return best, nil
 }

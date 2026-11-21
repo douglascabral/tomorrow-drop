@@ -11,7 +11,7 @@ import (
 	"tomorrow-drop/internal/limits"
 )
 
-func TestQuadroIdaEVolta(t *testing.T) {
+func TestFrameRoundTrip(t *testing.T) {
 	var buf bytes.Buffer
 	payload := []byte(`{"type":"DISCOVER"}`)
 
@@ -23,72 +23,72 @@ func TestQuadroIdaEVolta(t *testing.T) {
 		t.Fatalf("ReadFrame: %v", err)
 	}
 	if !bytes.Equal(got, payload) {
-		t.Fatalf("ReadFrame = %q, esperado %q", got, payload)
+		t.Fatalf("ReadFrame = %q, want %q", got, payload)
 	}
 }
 
-func TestQuadroUsaCabecalhoBigEndian(t *testing.T) {
+func TestFrameUsesBigEndianHeader(t *testing.T) {
 	var buf bytes.Buffer
 	if err := WriteFrame(&buf, []byte("abc")); err != nil {
 		t.Fatalf("WriteFrame: %v", err)
 	}
 	if got := binary.BigEndian.Uint32(buf.Bytes()[:4]); got != 3 {
-		t.Fatalf("cabeçalho = %d, esperado 3", got)
+		t.Fatalf("header = %d, want 3", got)
 	}
 }
 
-func TestWriteFrameRejeitaPayloadVazio(t *testing.T) {
+func TestWriteFrameRejectsEmptyPayload(t *testing.T) {
 	err := WriteFrame(io.Discard, nil)
 	if !errors.Is(err, apperr.ErrMalformed) {
-		t.Fatalf("WriteFrame vazio = %v, esperado ErrMalformed", err)
+		t.Fatalf("WriteFrame empty = %v, want ErrMalformed", err)
 	}
 }
 
-func TestWriteFrameRejeitaPayloadAcimaDoLimite(t *testing.T) {
+func TestWriteFrameRejectsPayloadAboveLimit(t *testing.T) {
 	err := WriteFrame(io.Discard, make([]byte, limits.MaxControlFrameBytes+1))
 	if !errors.Is(err, apperr.ErrLimitExceeded) {
-		t.Fatalf("WriteFrame grande = %v, esperado ErrLimitExceeded", err)
+		t.Fatalf("WriteFrame large = %v, want ErrLimitExceeded", err)
 	}
 }
 
-func TestReadFrameRejeitaTamanhoAcimaDoLimiteSemLerCorpo(t *testing.T) {
-	var cabecalho [4]byte
-	binary.BigEndian.PutUint32(cabecalho[:], limits.MaxControlFrameBytes+1)
-	leitor := bytes.NewReader(cabecalho[:])
+func TestReadFrameRejectsSizeAboveLimitWithoutReadingBody(t *testing.T) {
+	var header [4]byte
+	binary.BigEndian.PutUint32(header[:], limits.MaxControlFrameBytes+1)
+	reader := bytes.NewReader(header[:])
 
-	_, err := ReadFrame(leitor)
+	_, err := ReadFrame(reader)
 	if !errors.Is(err, apperr.ErrLimitExceeded) {
-		t.Fatalf("ReadFrame = %v, esperado ErrLimitExceeded", err)
+		t.Fatalf("ReadFrame = %v, want ErrLimitExceeded", err)
 	}
-	if leitor.Len() != 0 {
-		t.Fatalf("ReadFrame leu o corpo de um quadro rejeitado")
+	if reader.Len() != 0 {
+		t.Fatalf("ReadFrame read the body of a rejected frame")
 	}
 }
 
-func TestReadFrameRejeitaTamanhoZero(t *testing.T) {
+func TestReadFrameRejectsZeroSize(t *testing.T) {
 	_, err := ReadFrame(bytes.NewReader([]byte{0, 0, 0, 0}))
 	if !errors.Is(err, apperr.ErrMalformed) {
-		t.Fatalf("ReadFrame zero = %v, esperado ErrMalformed", err)
+		t.Fatalf("ReadFrame zero = %v, want ErrMalformed", err)
 	}
 }
 
-func TestReadFrameRejeitaCorpoTruncado(t *testing.T) {
+func TestReadFrameRejectsTruncatedBody(t *testing.T) {
 	_, err := ReadFrame(bytes.NewReader([]byte{0, 0, 0, 5, 'a', 'b'}))
 	if !errors.Is(err, apperr.ErrMalformed) {
-		t.Fatalf("ReadFrame truncado = %v, esperado ErrMalformed", err)
+		t.Fatalf("ReadFrame truncated = %v, want ErrMalformed", err)
 	}
 }
 
-func TestReadFrameRejeitaCabecalhoIncompleto(t *testing.T) {
+func TestReadFrameRejectsPartialHeader(t *testing.T) {
 	_, err := ReadFrame(bytes.NewReader([]byte{0, 0}))
 	if !errors.Is(err, apperr.ErrMalformed) {
-		t.Fatalf("ReadFrame cabeçalho parcial = %v, esperado ErrMalformed", err)
+		t.Fatalf("ReadFrame partial header = %v, want ErrMalformed", err)
 	}
 }
 
-func TestReadFrameFimLimpoRetornaEOF(t *testing.T) {
+func TestReadFrameCleanEOFReturnsEOF(t *testing.T) {
 	_, err := ReadFrame(bytes.NewReader(nil))
 	if !errors.Is(err, io.EOF) {
-		t.Fatalf("ReadFrame vazio = %v, esperado io.EOF", err)
+		t.Fatalf("ReadFrame empty = %v, want io.EOF", err)
 	}
 }

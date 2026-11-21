@@ -5,21 +5,21 @@ import (
 	"time"
 )
 
-func TestTimeoutsSaoPositivos(t *testing.T) {
-	for nome, valor := range map[string]time.Duration{
+func TestTimeoutsArePositive(t *testing.T) {
+	for name, value := range map[string]time.Duration{
 		"HandshakeTimeout": HandshakeTimeout,
 		"DecisionTimeout":  DecisionTimeout,
 		"IdleTimeout":      IdleTimeout,
 	} {
-		if valor <= 0 {
-			t.Errorf("%s = %v, esperado duração positiva", nome, valor)
+		if value <= 0 {
+			t.Errorf("%s = %v, want a positive duration", name, value)
 		}
 	}
 }
 
-func TestIntervaloDeDescobertaEhDoPRD(t *testing.T) {
-	// PRD v1.9, seção 5.2: intervalo aprovado de 30 segundos.
+func TestDiscoveryIntervalMatchesPRD(t *testing.T) {
+	// PRD v1.9, section 5.2: approved interval of 30 seconds.
 	if DiscoveryInterval != 30*time.Second {
-		t.Fatalf("DiscoveryInterval = %v, esperado 30s conforme PRD", DiscoveryInterval)
+		t.Fatalf("DiscoveryInterval = %v, want 30s per the PRD", DiscoveryInterval)
 	}
 }

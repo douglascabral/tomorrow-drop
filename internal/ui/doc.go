@@ -1,5 +1,5 @@
-// Package ui reúne a lógica de apresentação independente de toolkit (PRD §19).
+// Package ui gathers presentation logic that is independent of the toolkit (PRD §19).
 //
-// Código que importa Fyne fica em cmd/tomorrow-drop ou em subpacotes
-// dedicados, nunca nos pacotes do núcleo.
+// Code that imports Fyne lives in cmd/tomorrow-drop or in dedicated
+// subpackages, never in the core packages.
 package ui

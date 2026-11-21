@@ -2,8 +2,8 @@ package protocol
 
 import "testing"
 
-func TestEstadosTemRotulosEstaveis(t *testing.T) {
-	casos := map[PeerState]string{
+func TestStatesHaveStableLabels(t *testing.T) {
+	cases := map[PeerState]string{
 		StateDiscovered:           "discovered",
 		StateConnecting:           "connecting",
 		StateAwaitingVerification: "awaiting_verification",
@@ -11,15 +11,15 @@ func TestEstadosTemRotulosEstaveis(t *testing.T) {
 		StateIdentityChanged:      "identity_changed",
 		StateDisconnected:         "disconnected",
 	}
-	for estado, esperado := range casos {
-		if got := estado.String(); got != esperado {
-			t.Errorf("PeerState(%d).String() = %q, esperado %q", int(estado), got, esperado)
+	for state, want := range cases {
+		if got := state.String(); got != want {
+			t.Errorf("PeerState(%d).String() = %q, want %q", int(state), got, want)
 		}
 	}
 }
 
-func TestEstadoDesconhecidoTemRotuloPadrao(t *testing.T) {
+func TestUnknownStateHasDefaultLabel(t *testing.T) {
 	if got := PeerState(99).String(); got != "unknown" {
-		t.Fatalf("estado desconhecido = %q, esperado \"unknown\"", got)
+		t.Fatalf("unknown state = %q, want \"unknown\"", got)
 	}
 }

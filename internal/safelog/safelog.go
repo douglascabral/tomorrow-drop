@@ -1,4 +1,4 @@
-// Package safelog cria loggers que redigem dados sensíveis.
+// Package safelog creates loggers that redact sensitive data.
 package safelog
 
 import (
@@ -7,11 +7,11 @@ import (
 	"strings"
 )
 
-// Redacted substitui o valor de qualquer campo sensível.
+// Redacted replaces the value of any sensitive field.
 const Redacted = "[REDACTED]"
 
-// sensitiveKeys são fragmentos de nome de campo (sem distinção de maiúsculas)
-// cujos valores nunca são gravados.
+// sensitiveKeys are field name fragments (case-insensitive) whose values
+// are never written.
 var sensitiveKeys = []string{
 	"private",
 	"secret",
@@ -25,7 +25,7 @@ var sensitiveKeys = []string{
 	"path",
 }
 
-// New cria um slog.Logger que grava em w, redigindo campos sensíveis.
+// New creates a slog.Logger that writes to w, redacting sensitive fields.
 func New(w io.Writer, level slog.Leveler) *slog.Logger {
 	return slog.New(slog.NewTextHandler(w, &slog.HandlerOptions{
 		Level:       level,
@@ -33,22 +33,22 @@ func New(w io.Writer, level slog.Leveler) *slog.Logger {
 	}))
 }
 
-func redact(_ []string, a slog.Attr) slog.Attr {
-	if a.Value.Kind() == slog.KindAny {
-		if _, ok := a.Value.Any().([]byte); ok {
-			return slog.String(a.Key, Redacted)
+func redact(_ []string, attr slog.Attr) slog.Attr {
+	if attr.Value.Kind() == slog.KindAny {
+		if _, ok := attr.Value.Any().([]byte); ok {
+			return slog.String(attr.Key, Redacted)
 		}
 	}
-	if isSensitive(a.Key) {
-		return slog.String(a.Key, Redacted)
+	if isSensitive(attr.Key) {
+		return slog.String(attr.Key, Redacted)
 	}
-	return a
+	return attr
 }
 
 func isSensitive(key string) bool {
 	lower := strings.ToLower(key)
-	for _, fragmento := range sensitiveKeys {
-		if strings.Contains(lower, fragmento) {
+	for _, fragment := range sensitiveKeys {
+		if strings.Contains(lower, fragment) {
 			return true
 		}
 	}

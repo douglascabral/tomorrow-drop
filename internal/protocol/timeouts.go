@@ -3,12 +3,12 @@ package protocol
 import "time"
 
 const (
-	// HandshakeTimeout limita o estabelecimento de TLS e a troca de versões.
+	// HandshakeTimeout limits the TLS handshake and version negotiation.
 	HandshakeTimeout = 10 * time.Second
-	// DecisionTimeout limita a espera por aceite ou recusa do destinatário (PRD §13).
+	// DecisionTimeout limits the wait for the recipient's accept or decline (PRD §13).
 	DecisionTimeout = 60 * time.Second
-	// IdleTimeout encerra conexões sem tráfego.
+	// IdleTimeout closes connections without traffic.
 	IdleTimeout = 30 * time.Second
-	// DiscoveryInterval é o intervalo de DISCOVER enquanto o app estiver visível (PRD §5.2).
+	// DiscoveryInterval is the DISCOVER interval while the app is visible (PRD §5.2).
 	DiscoveryInterval = 30 * time.Second
 )

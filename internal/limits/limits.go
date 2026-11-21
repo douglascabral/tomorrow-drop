@@ -1,22 +1,22 @@
-// Package limits centraliza os limites de recursos do protocolo e do núcleo.
+// Package limits centralizes the resource limits of the protocol and the core.
 //
-// Valores protegem contra exaustão de memória, disco e rede por pares
-// não autenticados ou maliciosos.
+// The values protect against memory, disk and network exhaustion caused by
+// unauthenticated or malicious peers.
 package limits
 
 const (
-	// MaxControlFrameBytes é o tamanho máximo de um quadro de controle (JSON).
+	// MaxControlFrameBytes is the maximum size of a control frame (JSON).
 	MaxControlFrameBytes = 64 << 10
-	// MaxDiscoveryDatagram é o tamanho máximo de um datagrama UDP de descoberta.
+	// MaxDiscoveryDatagram is the maximum size of a UDP discovery datagram.
 	MaxDiscoveryDatagram = 1 << 10
-	// MaxFileNameBytes é o tamanho máximo de um nome de arquivo recebido.
+	// MaxFileNameBytes is the maximum size of a received file name.
 	MaxFileNameBytes = 255
-	// MaxFilesPerOffer é a quantidade máxima de arquivos em uma oferta.
+	// MaxFilesPerOffer is the maximum number of files in one offer.
 	MaxFilesPerOffer = 1000
-	// MaxTextBytes é o tamanho máximo de texto ou link transferido.
+	// MaxTextBytes is the maximum size of a transferred text or link.
 	MaxTextBytes = 1 << 20
-	// MaxConcurrentTransfers é o número de transferências simultâneas.
+	// MaxConcurrentTransfers is the number of simultaneous transfers.
 	MaxConcurrentTransfers = 4
-	// MaxDiscoveredDevices é o número máximo de dispositivos na lista efêmera.
+	// MaxDiscoveredDevices is the maximum size of the ephemeral device list.
 	MaxDiscoveredDevices = 256
 )
