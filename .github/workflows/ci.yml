@@ -20,6 +20,13 @@ jobs:
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
+      - name: System libraries for the graphical application (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl-dev libegl-dev libx11-dev libxrandr-dev \
+            libxcursor-dev libxinerama-dev libxi-dev libxxf86vm-dev \
+            libxkbcommon-dev libwayland-dev
       - name: gofmt
         shell: bash
         run: test -z "$(gofmt -l .)"
@@ -38,6 +45,13 @@ jobs:
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
+      - name: System libraries for the graphical application (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl-dev libegl-dev libx11-dev libxrandr-dev \
+            libxcursor-dev libxinerama-dev libxi-dev libxxf86vm-dev \
+            libxkbcommon-dev libwayland-dev
       - name: Install tools
         run: |
           go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
