@@ -12,6 +12,9 @@ Free, minimalist application to transfer files, texts, links and clipboard conte
 - [Build](docs/COMPILACAO.md): build for Linux, Windows and macOS.
 - [Protocol](docs/PROTOCOLO.md): framing, version, states, limits and timeouts.
 - [Discovery and connectivity](docs/DISCOVERY.md): UDP datagrams, rate limits, query schedule, device list and manual connection.
+- [User guide](docs/USER_GUIDE.md): installation, pairing, sending, receiving, the 30-second rule and the limits.
+- [Threat model](docs/THREAT_MODEL.md) and [security review](docs/SECURITY_REVIEW.md).
+- [Performance](docs/PERFORMANCE.md), [dependencies](docs/DEPENDENCIES.md) and [acceptance checklist](docs/ACCEPTANCE.md).
 - [Packaging](docs/PACKAGING.md): macOS bundle, metadata and what is still missing.
 - [Mobile](docs/MOBILE.md): Android and iOS/iPadOS requirements and verification status.
 - [Graphical application](docs/GUI.md): screens, availability with the window, safety rules and known limits.

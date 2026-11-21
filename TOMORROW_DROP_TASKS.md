@@ -87,12 +87,12 @@
 
 ## 08 — Security, quality and release
 
-[   ] 062. Review the threat model, authentication states, TLS validation and pinning; run adversarial tests of first pairing.
-[   ] 063. Apply fuzzing to the UDP parsers, protocol messages, metadata and framing; verify memory and CPU limits.
-[   ] 064. Review private key storage, permissions, logs, temporary files, error handling and overwrite protection.
+[x] 062. Review the threat model, authentication states, TLS validation and pinning; run adversarial tests of first pairing.
+[x] 063. Apply fuzzing to the UDP parsers, protocol messages, metadata and framing; verify memory and CPU limits.
+[x] 064. Review private key storage, permissions, logs, temporary files, error handling and overwrite protection.
 [   ] 065. Validate full interoperability GUI↔GUI, GUI↔CLI and CLI↔CLI on supported platforms.
 [   ] 066. Run performance and stability tests for large files, slow connections, network failures and many devices on one VLAN.
-[   ] 067. Review dependencies, licenses and the build chain; generate a dependency list and reproducible build instructions.
-[   ] 068. Document installation, secure pairing, manual connection, the 30-second behavior, clipboard, Downloads, lifecycle and application limits.
+[x] 067. Review dependencies, licenses and the build chain; generate a dependency list and reproducible build instructions.
+[x] 068. Document installation, secure pairing, manual connection, the 30-second behavior, clipboard, Downloads, lifecycle and application limits.
 [   ] 069. Prepare packaging and distribution for Linux, Windows, macOS, Android and iOS/iPadOS, including signing when required.
 [   ] 070. Run the final PRD v1.9 checklist and record evidence of approval for all MVP acceptance criteria.
