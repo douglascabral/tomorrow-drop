@@ -197,5 +197,18 @@
   "gui.share.banner": "Choose a device to send: %s",
   "gui.share.text_word": "text",
   "gui.share.title": "Share",
-  "gui.send.clipboard_files_title": "Send %s (%s)?"
+  "gui.send.clipboard_files_title": "Send %s (%s)?",
+  "ios.receive.title": "Received files",
+  "ios.receive.text": "Received text",
+  "ios.receive.saved": "%d file(s) saved in Files, in Tomorrow Drop.",
+  "ios.pair.title": "Pairing",
+  "ios.pair.paired": "Paired with %s.",
+  "ios.pair.already": "This device is already paired.",
+  "ios.send.not_paired": "The device is not paired. Pair it first.",
+  "ios.send.done": "Sent.",
+  "ios.send.files_title": "Sending files",
+  "ios.send.text_title": "Sending text",
+  "ios.receive.running": "Receiving files",
+  "ios.background.title": "Transfer interrupted",
+  "ios.background.message": "The app left the screen, so the other device could not reach it. Keep the app open during transfers."
 }

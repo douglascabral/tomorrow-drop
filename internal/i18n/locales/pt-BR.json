@@ -197,5 +197,18 @@
   "gui.share.banner": "Escolha um dispositivo para enviar: %s",
   "gui.share.text_word": "texto",
   "gui.share.title": "Compartilhar",
-  "gui.send.clipboard_files_title": "Enviar %s (%s)?"
+  "gui.send.clipboard_files_title": "Enviar %s (%s)?",
+  "ios.receive.title": "Arquivos recebidos",
+  "ios.receive.text": "Texto recebido",
+  "ios.receive.saved": "%d arquivo(s) salvos no app Arquivos, em Tomorrow Drop.",
+  "ios.pair.title": "Pareamento",
+  "ios.pair.paired": "Pareado com %s.",
+  "ios.pair.already": "Este dispositivo já está pareado.",
+  "ios.send.not_paired": "O dispositivo não está pareado. Pareie primeiro.",
+  "ios.send.done": "Enviado.",
+  "ios.send.files_title": "Enviando arquivos",
+  "ios.send.text_title": "Enviando texto",
+  "ios.receive.running": "Recebendo arquivos",
+  "ios.background.title": "Transferência interrompida",
+  "ios.background.message": "O app saiu da tela e o outro dispositivo não conseguiu alcançá-lo. Mantenha o app aberto durante as transferências."
 }
