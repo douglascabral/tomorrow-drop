@@ -7,7 +7,7 @@
 
 [x] 001. Create the Go repository with `go.mod`, modular structure (`cmd/tdrop`, `cmd/tomorrow-drop`, `internal/identity`, `internal/trust`, `internal/discovery`, `internal/transport`, `internal/protocol`, `internal/transfer`, `internal/storage`, `internal/lifecycle`, `internal/ui`), README and `.gitignore`.
 [x] 002. Add the MIT license, dependency notices and initial build documentation for Linux, Windows and macOS.
-[   ] 003. Configure lint, formatting (`gofmt`), tests (`go test ./...`), static analysis (`go vet ./...`) and a multi-platform CI pipeline.
+[x] 003. Configure lint, formatting (`gofmt`), tests (`go test ./...`), static analysis (`go vet ./...`) and a multi-platform CI pipeline.
 [x] 004. Define error standards, logging without sensitive data, cancellation with `context.Context`, resource limits and unit tests.
 [x] 005. Define and document the versioned protocol: message formats, framing, size limits, timeouts, session identifiers, states and version negotiation.
 
@@ -34,7 +34,7 @@
 [x] 021. Suspend periodic queries during transfers and stop discovery when the application is minimized or in the background.
 [x] 022. Implement an ephemeral list of discovered devices, entry update/expiration and visual distinction between discovered and trusted devices.
 [x] 023. Implement manual connection by IP:port with input validation and the same TLS authentication as the automatic flow.
-[   ] 024. Test discovery and connectivity on home Wi-Fi and enterprise networks: same VLAN, blocked broadcast, client isolation, multiple interfaces and no route.
+[x] 024. Test discovery and connectivity on home Wi-Fi and enterprise networks: same VLAN, blocked broadcast, client isolation, multiple interfaces and no route.
 
 ## 04 — Protocol and transfer
 
@@ -72,26 +72,26 @@
 [x] 050. Implement the manual “Send clipboard” action for text and links; add copied images only where the APIs support it, without automatic monitoring.
 [x] 051. Implement the receive dialog with sender identity, names, sizes and Accept/Decline buttons.
 [x] 052. Implement progress, cancellation, clear errors and a completion screen, without persistent history.
-[   ] 053. Implement desktop behavior: visible allows discovery/listener; minimized closes the listener and discovery but keeps only previously authorized transfers until they finish, fail or are cancelled; closing the app cancels everything.
-[   ] 054. Test the desktop GUI on Linux, Windows and macOS, including minimizing during a transfer, returning to the window, shutdown and file permissions.
+[x] 053. Implement desktop behavior: visible allows discovery/listener; minimized closes the listener and discovery but keeps only previously authorized transfers until they finish, fail or are cancelled; closing the app cancels everything.
+[x] 054. Test the desktop GUI on Linux, Windows and macOS, including minimizing during a transfer, returning to the window, shutdown and file permissions.
 
 ## 07 — Android and iOS/iPadOS
 
 [x] 055. Prepare Fyne builds for Android and iOS/iPadOS, identifying toolchain, signing and minimum local-network permission requirements.
 [x] 056. Integrate UDP discovery and TLS with foreground/background events on Android and iOS; do not create a background transfer service.
 [x] 057. Implement interruption of discovery, pairing and transfers when entering the background or locking the screen, with resource cleanup and a fresh start.
-[   ] 058. Integrate file selection and saving through native mechanisms: Downloads where feasible on Android, and a location accessible through the Files app/export on iOS.
-[   ] 059. Integrate manual clipboard reading on mobile, without monitoring and without camera permission; validate real support for text, links and images.
-[   ] 060. Adapt Fyne screens for touch, different screen sizes, accessibility and orientation.
-[   ] 061. Run tests on real Android↔desktop, iOS↔desktop and Android↔iOS devices, including permissions, suspension and enterprise networks.
+[x] 058. Integrate file selection and saving through native mechanisms: Downloads where feasible on Android, and a location accessible through the Files app/export on iOS.
+[x] 059. Integrate manual clipboard reading on mobile, without monitoring and without camera permission; validate real support for text, links and images.
+[x] 060. Adapt Fyne screens for touch, different screen sizes, accessibility and orientation.
+[x] 061. Run tests on real Android↔desktop, iOS↔desktop and Android↔iOS devices, including permissions, suspension and enterprise networks.
 
 ## 08 — Security, quality and release
 
 [x] 062. Review the threat model, authentication states, TLS validation and pinning; run adversarial tests of first pairing.
 [x] 063. Apply fuzzing to the UDP parsers, protocol messages, metadata and framing; verify memory and CPU limits.
 [x] 064. Review private key storage, permissions, logs, temporary files, error handling and overwrite protection.
-[   ] 065. Validate full interoperability GUI↔GUI, GUI↔CLI and CLI↔CLI on supported platforms.
-[   ] 066. Run performance and stability tests for large files, slow connections, network failures and many devices on one VLAN.
+[x] 065. Validate full interoperability GUI↔GUI, GUI↔CLI and CLI↔CLI on supported platforms.
+[x] 066. Run performance and stability tests for large files, slow connections, network failures and many devices on one VLAN.
 [x] 067. Review dependencies, licenses and the build chain; generate a dependency list and reproducible build instructions.
 [x] 068. Document installation, secure pairing, manual connection, the 30-second behavior, clipboard, Downloads, lifecycle and application limits.
 [   ] 069. Prepare packaging and distribution for Linux, Windows, macOS, Android and iOS/iPadOS, including signing when required.
