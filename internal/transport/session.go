@@ -163,6 +163,11 @@ func (s *Session) Receive() (protocol.Message, error) {
 	}
 	if !protocol.AllowedIn(s.state, msg.Type) {
 		_ = s.conn.Close()
+		// A pairing message on a trusted connection means the other device no
+		// longer has this one paired. It is not processed; it is named.
+		if msg.Type == protocol.MsgPairConfirm && s.state == protocol.StateTrusted {
+			return protocol.Message{}, fmt.Errorf("pairing on a trusted connection: %w", apperr.ErrPeerWantsToPair)
+		}
 		return protocol.Message{}, fmt.Errorf("%s received in %s: %w", msg.Type, s.state, apperr.ErrUnauthorized)
 	}
 	return msg, nil

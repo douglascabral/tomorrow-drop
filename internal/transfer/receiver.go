@@ -120,6 +120,9 @@ func (r *Receiver) Serve(ctx context.Context, s *transport.Session) (Result, err
 		if ctx.Err() != nil {
 			return Result{}, contextOr(ctx, err)
 		}
+		if errors.Is(err, apperr.ErrPeerWantsToPair) {
+			return Result{}, err
+		}
 		// Nothing was offered, so no transfer failed (see ErrNoOffer).
 		return Result{}, fmt.Errorf("connection ended before an offer: %w", apperr.ErrNoOffer)
 	}
