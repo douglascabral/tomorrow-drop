@@ -20,6 +20,23 @@
 - Never implement custom cryptography or weaken security checks.
 - Keep changes small, cohesive and testable.
 
+## Platforms (mandatory)
+
+Every change to user-visible behavior, protocol, discovery, pairing, trust or transfer must be considered for **every** platform, and applied to each one it affects in the same block:
+
+- **CLI:** `cmd/tdrop`.
+- **Desktop graphical app:** `cmd/tomorrow-drop` (Fyne), on Linux, Windows and macOS. macOS is built as two bundles, arm64 and amd64 (`scripts/package-macos.sh`).
+- **Android:** the Fyne application, built with `scripts/install-android.sh`.
+- **iPhone and iPad:** the native SwiftUI app in `ios/` over the core `cmd/tomorrow-drop-ios`. It does not use the Fyne screens, so a fix in `cmd/tomorrow-drop` does not reach it.
+- **Shared core:** `internal/`. A change here reaches every platform that calls it. Check each caller, including `cmd/tomorrow-drop-ios`.
+
+Rules:
+
+- Before closing a change, list the platforms it touches and the ones it does not, with the reason.
+- A platform that is not changed yet must not be left silently behind: add a task or a note in `TOMORROW_DROP_TASKS.md` and in the platform's doc (`docs/MOBILE.md`, `docs/GUI.md`, `docs/PACKAGING.md`), and say so in the final message.
+- Each platform gets its own regression test where the code can be tested (for example, `cmd/tomorrow-drop-ios` has its own test package). A test on one platform does not cover another.
+- Platform builds that cannot run here (physical iPhone/iPad, Intel Mac, Android device) are reported as built or not built, never as verified on hardware.
+
 ## Internationalization (i18n)
 
 - The software is multilingual. Initial language: **Brazilian Portuguese (`pt-BR`)**. Mandatory fallback: **English (`en`)**.
