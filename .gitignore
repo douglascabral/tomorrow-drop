@@ -1,27 +1,27 @@
-# Binários e saídas de build
+# Build outputs and binaries
 /bin/
 /dist/
 *.exe
 /tdrop
 /tomorrow-drop
 
-# Testes e cobertura
+# Tests and coverage
 *.test
 *.out
 coverage.*
 
-# Chaves e segredos locais (a identidade nunca deve ser versionada)
+# Local keys and secrets (the identity must never be committed)
 *.key
 *.pem
 /.tdrop/
 
-# Ambiente e editores
+# Environment and editors
 .idea/
 .vscode/
 *.swp
 .DS_Store
 Thumbs.db
 
-# Dependências Python de ferramentas auxiliares
+# Python dependencies of auxiliary tools
 __pycache__/
 .venv/
