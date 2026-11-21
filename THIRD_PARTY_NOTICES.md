@@ -8,7 +8,7 @@ The core uses only the Go standard library (PRD §3.3). The graphical applicatio
 |---|---|---|---|
 | fyne.io/fyne/v2 | v2.8.2 | BSD-3-Clause | Graphical interface (`cmd/tomorrow-drop` only) |
 
-Fyne brings transitive dependencies (for example `github.com/go-gl/gl`, `github.com/go-text/typesetting`, `github.com/fsnotify/fsnotify`, `fyne.io/systray`). They are listed in `go.mod` and `go.sum`. A full per-package license inventory is part of task 067 and must be generated before publication.
+Fyne brings transitive dependencies (for example `github.com/go-gl/gl`, `github.com/go-text/typesetting`, `github.com/fsnotify/fsnotify`, `fyne.io/systray`). They are listed in `go.mod` and `go.sum`. The full inventory of shipped modules, with the license of each one, is in [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md). It is generated and reviewed by `scripts/dependency-report.sh`.
 
 Each new dependency must be recorded here with name, version, license and reason before being added to `go.mod`. Dependencies must be compatible with the MIT license.
 
