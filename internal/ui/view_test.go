@@ -182,3 +182,31 @@ func TestDeviceAgeLabelStaysUnderMinute(t *testing.T) {
 		t.Fatalf("DeviceAge = %q, want 5s", got)
 	}
 }
+
+func TestFormatBytesUsesCompactUnits(t *testing.T) {
+	cases := map[int64]string{
+		0:                      "0 B",
+		1023:                   "1023 B",
+		1024:                   "1.0 KB",
+		2_516_582:              "2.4 MB",
+		137 * 1024 * 1024:      "137.0 MB",
+		3 * 1024 * 1024 * 1024: "3.0 GB",
+	}
+	for in, want := range cases {
+		if got := FormatBytes(in); got != want {
+			t.Errorf("FormatBytes(%d) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestOfferViewListsEachItemWithItsSize(t *testing.T) {
+	offer := transfer.Offer{
+		ID:    "0123456789abcdef",
+		Kind:  transfer.KindFile,
+		Items: []transfer.Item{{Name: "report.pdf", Size: 2048}, {Name: "photo.jpg", Size: 4096}},
+	}
+	v := OfferView(offer, "MacBook")
+	if len(v.Items) != 2 || v.Items[0].Name != "report.pdf" || v.Items[0].Size != 2048 {
+		t.Fatalf("items = %+v, want each name with its size", v.Items)
+	}
+}

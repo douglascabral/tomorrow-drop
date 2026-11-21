@@ -155,7 +155,14 @@ type OfferDialog struct {
 	Count      int
 	TotalBytes int64
 	Names      []string
+	Items      []OfferItem
 	FromName   string
+}
+
+// OfferItem is one file of an incoming request, with its size.
+type OfferItem struct {
+	Name string
+	Size int64
 }
 
 // OfferView summarizes an offer. fromName is the trusted device's name.
@@ -163,6 +170,7 @@ func OfferView(offer transfer.Offer, fromName string) OfferDialog {
 	v := OfferDialog{Kind: offer.Kind, Count: len(offer.Items), FromName: fromName}
 	for _, it := range offer.Items {
 		v.TotalBytes += it.Size
+		v.Items = append(v.Items, OfferItem{Name: it.Name, Size: it.Size})
 		if it.Name != "" {
 			v.Names = append(v.Names, it.Name)
 		}
@@ -199,3 +207,19 @@ func DeviceAge(seen, now time.Time) string {
 
 // ensure netip is used by callers that build rows from addresses
 var _ netip.AddrPort
+
+// FormatBytes writes a size in the most readable unit, as shown on the screens.
+func FormatBytes(n int64) string {
+	const unit = 1024
+	if n < unit {
+		return fmt.Sprintf("%d B", n)
+	}
+	units := []string{"KB", "MB", "GB", "TB"}
+	f := float64(n) / unit
+	i := 0
+	for f >= unit && i < len(units)-1 {
+		f /= unit
+		i++
+	}
+	return fmt.Sprintf("%.1f %s", f, units[i])
+}
