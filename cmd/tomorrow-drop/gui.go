@@ -61,12 +61,29 @@ type gui struct {
 	found    chan discovery.Announcement
 
 	availMu sync.Mutex
-	avail   context.CancelFunc
-	scanMu  sync.Mutex
-	scanner *discovery.Scanner
+	// listening counts the incoming listener until it is closed.
+	listening sync.WaitGroup
+	avail     context.CancelFunc
+	scanMu    sync.Mutex
+	scanner   *discovery.Scanner
 
 	devicesList *widget.List
 	rows        []ui.DeviceRow
+	// localAddrs are this device's addresses, used to drop its own answers.
+	localAddrs []netip.Addr
+	// addrs reads this device's addresses; tests replace it.
+	addrs func() []netip.Addr
+	// screenOn keeps the screen on (true) or lets it turn off (false). Only
+	// phones use it; main sets it from the platform driver.
+	screenOn func(bool)
+}
+
+// keepScreenOn keeps the phone's screen on while the app is in the foreground.
+// Leaving the foreground lets the screen turn off, which interrupts transfers.
+func (g *gui) keepScreenOn(on bool) {
+	if g.mobile && g.screenOn != nil {
+		g.screenOn(on)
+	}
 }
 
 // newGUI builds the application state. save picks where received files go; nil
@@ -89,6 +106,7 @@ func newGUI(ctx context.Context, tr *i18n.Bundle, home, cfgPath string, save tra
 		discPort: discovery.DefaultPort,
 		ops:      map[int]context.CancelFunc{},
 		rowParts: map[fyne.CanvasObject]*deviceRowParts{},
+		addrs:    localAddresses,
 	}
 	recv, err := transfer.NewReceiver(transfer.ReceiverConfig{
 		Decide:      g.askOffer,
@@ -122,6 +140,9 @@ func (g *gui) setAvailable(on bool) {
 	if !on && g.avail != nil {
 		g.avail()
 		g.avail = nil
+		// Wait until the listener is really closed: once this returns, no new
+		// connection can be accepted (PRD §17.2).
+		g.listening.Wait()
 	}
 	g.availMu.Unlock()
 	// Only mobile interrupts transfers on the way to the background (task 057).
@@ -132,6 +153,7 @@ func (g *gui) setAvailable(on bool) {
 	if err := g.ctl.SetVisible(on); err != nil {
 		g.logError(err)
 	}
+	g.keepScreenOn(on)
 }
 
 func (g *gui) startListeners(ctx context.Context) {
@@ -141,12 +163,15 @@ func (g *gui) startListeners(ctx context.Context) {
 		g.scanMu.Lock()
 		g.scanner = sc
 		g.scanMu.Unlock()
-		g.found = make(chan discovery.Announcement, 32)
-		go func() { _ = sc.Run(ctx, g.found) }()
-		go g.collect(ctx, g.found)
+		// A local channel: the goroutines must not read g.found, which the next
+		// start replaces while they may still be running.
+		found := make(chan discovery.Announcement, 32)
+		g.found = found
+		go func() { _ = sc.Run(ctx, found) }()
+		go g.collect(ctx, found)
 	}
 
-	name := deviceName()
+	name := announcedName()
 	if _, err := discovery.Listen(ctx, discovery.ListenerOptions{
 		Addr: "0.0.0.0:" + strconv.Itoa(g.discPort), Name: name, TCPPort: g.tlsPort,
 	}); err != nil {
@@ -159,7 +184,9 @@ func (g *gui) startListeners(ctx context.Context) {
 		return
 	}
 	g.setBoundTLSPort(ln.Addr().(*net.TCPAddr).Port)
+	g.listening.Add(1)
 	go func() {
+		defer g.listening.Done()
 		<-ctx.Done()
 		g.setBoundTLSPort(0)
 		_ = ln.Close()
@@ -222,10 +249,19 @@ func (g *gui) collect(ctx context.Context, found <-chan discovery.Announcement) 
 		case <-ctx.Done():
 			return
 		case a := <-found:
-			_ = g.reg.Observe(a, time.Now())
-			g.refreshDevices()
+			g.observe(a)
 		}
 	}
+}
+
+// observe adds an answer to the device list. This device's own answers are
+// dropped, so the list shows only other devices.
+func (g *gui) observe(a discovery.Announcement) {
+	if discovery.IsOwnAnnouncement(a, g.localAddrs, g.tlsPort) {
+		return
+	}
+	_ = g.reg.Observe(a, time.Now())
+	g.refreshDevices()
 }
 
 func (g *gui) queryAll(now time.Time) error {
@@ -241,6 +277,11 @@ func (g *gui) queryAll(now time.Time) error {
 
 func (g *gui) logError(err error) {
 	fmt.Fprintln(os.Stderr, g.tr.T(apperr.MessageKey(err)))
+}
+
+// receiveAgainAction is the completion action that opens the receive screen.
+func (g *gui) receiveAgainAction() doneAction {
+	return doneAction{label: g.tr.T("gui.done.again"), run: g.showReceive}
 }
 
 // handleIncoming runs one accepted connection: pairing for unknown devices,
@@ -260,17 +301,19 @@ func (g *gui) handleIncoming(conn net.Conn) {
 	res, err := g.recv.Serve(ctx, s)
 	g.onUI(func() { g.recvMeter = nil })
 	if err != nil {
-		if ctx.Err() != nil {
+		// A trusted device that connects without an offer (for example, when
+		// the person only opens it) is not a failed transfer.
+		if ctx.Err() != nil || errors.Is(err, apperr.ErrNoOffer) {
 			return
 		}
-		g.showCompleted(g.tr.T("gui.receive.failed"), g.tr.T(apperr.MessageKey(err)), nil)
+		g.showOutcome(false, g.tr.T("gui.receive.failed"), g.tr.T(apperr.MessageKey(err)), nil, g.receiveAgainAction())
 		return
 	}
 	if res.Text != "" {
 		g.showText(res.Text)
 		return
 	}
-	g.showCompleted(g.tr.T("gui.receive.done"), g.tr.T("gui.receive.saved", len(res.Files)), res.Files)
+	g.showCompleted(g.tr.T("gui.receive.done"), g.tr.T("gui.receive.saved", len(res.Files)), res.Files, g.receiveAgainAction())
 }
 
 func (g *gui) pairAsked(ctx context.Context, s *transport.Session) {
@@ -286,14 +329,6 @@ func (g *gui) pairAsked(ctx context.Context, s *transport.Session) {
 	}
 	g.notify(g.tr.T("gui.pair.done"), g.tr.T("gui.pair.paired", name))
 	g.refreshDevices()
-}
-
-func deviceName() string {
-	host, err := os.Hostname()
-	if err != nil || host == "" {
-		return "tomorrow-drop"
-	}
-	return host
 }
 
 // manualEndpoint parses what the person typed in the manual connection field.

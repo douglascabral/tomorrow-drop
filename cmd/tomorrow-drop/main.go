@@ -22,7 +22,14 @@ import (
 )
 
 func main() {
-	path, _ := settings.DefaultPath()
+	a := app.NewWithID("org.tomorrowdrop.app")
+	a.Settings().SetTheme(themeFor(fyne.CurrentDevice().IsMobile()))
+
+	home := dataDirFrom(os.UserConfigDir, func() string { return appStorageDir(a) })
+	if err := migrateHome(filepath.Join(os.TempDir(), "tomorrow-drop"), home); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	path := filepath.Join(home, "settings.json")
 	cfg, err := settings.Load(path)
 	if err != nil {
 		cfg = settings.Default
@@ -33,8 +40,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	a := app.NewWithID("org.tomorrowdrop.app")
-	a.Settings().SetTheme(darkTheme{})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -42,12 +47,14 @@ func main() {
 	// desktop keeps saving into Downloads (PRD §14.1).
 	var g *gui
 	ask := func(name string) (io.WriteCloser, error) { return g.saveLocation(name) }
-	g, err = newGUI(ctx, tr, defaultHome(), path, receiveDestination(fyne.CurrentDevice().IsMobile(), ask))
+	g, err = newGUI(ctx, tr, home, path, receiveDestination(fyne.CurrentDevice().IsMobile(), ask))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	g.app = a
+	// Phones keep the screen on while the app is open (see gui.keepScreenOn).
+	g.screenOn = func(on bool) { setScreenAwake(g.win, on) }
 	g.mobile = fyne.CurrentDevice().IsMobile()
 	g.win = a.NewWindow(tr.T("app.nome"))
 	g.win.Resize(fyne.NewSize(420, 640))
@@ -61,13 +68,14 @@ func main() {
 	g.win.ShowAndRun()
 }
 
-// defaultHome is the per-user directory for identity, trust and staging files.
-func defaultHome() string {
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		return filepath.Join(os.TempDir(), "tomorrow-drop")
+// appStorageDir is the folder that the platform gives the application for its
+// own files, or "" when there is none.
+func appStorageDir(a fyne.App) string {
+	uri := a.Storage().RootURI()
+	if uri == nil {
+		return ""
 	}
-	return filepath.Join(dir, "tomorrow-drop")
+	return uri.Path()
 }
 
 // logoImage shows the two-mountains-and-sun logo at the given size.

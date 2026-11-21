@@ -50,13 +50,13 @@ func (g *gui) askOffer(ctx context.Context, offer transfer.Offer) bool {
 			name = g.tr.T("cli.kind." + string(v.Kind))
 		}
 		items.Add(card(container.NewBorder(nil, nil, widget.NewIcon(theme.DocumentIcon()), nil,
-			container.NewVBox(widget.NewLabel(name), widget.NewLabel(ui.FormatBytes(it.Size))))))
+			container.NewVBox(newLabel(name), newLabel(ui.FormatBytes(it.Size))))))
 	}
-	head := widget.NewLabelWithStyle(g.tr.T("gui.receive.from_device", from), fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	head := newLabelStyled(g.tr.T("gui.receive.from_device", from), fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	body := container.NewVBox(head,
-		widget.NewLabelWithStyle(g.tr.T("gui.receive.summary", v.Count, ui.FormatBytes(v.TotalBytes)), fyne.TextAlignCenter, fyne.TextStyle{}),
+		newLabelStyled(g.tr.T("gui.receive.summary", v.Count, ui.FormatBytes(v.TotalBytes)), fyne.TextAlignCenter, fyne.TextStyle{}),
 		items)
-	title := g.tr.T("gui.receive.title")
+	title := g.tr.T("gui.receive.title", from)
 	accepted := g.askScreen(ctx, title, body, g.tr.T("gui.receive.accept"), g.tr.T("gui.receive.decline"))
 	if accepted {
 		g.beginReceiveMeter(from, v.Count, v.TotalBytes)
@@ -88,12 +88,12 @@ func (g *gui) onReceiveProgress(p transfer.ReceiveProgress) {
 func (g *gui) askPairing(local, remote identity.Fingerprint) bool {
 	v := ui.PairingView(local, remote)
 	head := container.NewVBox(
-		widget.NewLabelWithStyle(g.tr.T("gui.pair.instructions"), fyne.TextAlignCenter, fyne.TextStyle{}),
+		newLabelStyled(g.tr.T("gui.pair.instructions"), fyne.TextAlignCenter, fyne.TextStyle{}),
 	)
-	localCard := card(widget.NewLabelWithStyle(g.tr.T("gui.pair.local"), fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-		widget.NewLabelWithStyle(v.Local, fyne.TextAlignLeading, fyne.TextStyle{Monospace: true}))
-	remoteCard := card(widget.NewLabelWithStyle(g.tr.T("gui.pair.remote"), fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-		widget.NewLabelWithStyle(v.Remote, fyne.TextAlignLeading, fyne.TextStyle{Monospace: true}))
+	localCard := card(newLabelStyled(g.tr.T("gui.pair.local"), fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		newLabelStyled(v.Local, fyne.TextAlignLeading, fyne.TextStyle{Monospace: true}))
+	remoteCard := card(newLabelStyled(g.tr.T("gui.pair.remote"), fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		newLabelStyled(v.Remote, fyne.TextAlignLeading, fyne.TextStyle{Monospace: true}))
 	body := container.NewVBox(head, localCard, remoteCard)
 	return g.askScreen(g.ctx, g.tr.T("gui.pair.title"), body, g.tr.T("gui.pair.confirm"), g.tr.T("gui.pair.cancel"))
 }
@@ -149,5 +149,10 @@ func (g *gui) showText(text string) {
 	entry.SetText(text)
 	entry.Wrapping = fyne.TextWrapWord
 	entry.Disable()
-	g.show(container.NewBorder(g.header(g.tr.T("gui.receive.text_title")), nil, nil, nil, scroll(card(entry))))
+	copy := widget.NewButtonWithIcon(g.tr.T("gui.receive.copy"), theme.ContentCopyIcon(), func() {
+		g.app.Clipboard().SetContent(text)
+	})
+	copy.Importance = widget.HighImportance
+	body := container.NewVBox(card(entry), copy)
+	g.show(container.NewBorder(g.header(g.tr.T("gui.receive.text_title")), nil, nil, nil, scroll(body)))
 }

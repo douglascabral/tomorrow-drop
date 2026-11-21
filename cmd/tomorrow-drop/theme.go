@@ -4,6 +4,8 @@ import (
 	"image/color"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 )
 
@@ -51,4 +53,48 @@ func (darkTheme) Icon(n fyne.ThemeIconName) fyne.Resource {
 
 func (darkTheme) Size(n fyne.ThemeSizeName) float32 {
 	return theme.DefaultTheme().Size(n)
+}
+
+// touchTheme enlarges the spacing, text and icons of the dark theme for phones
+// and tablets, so buttons and list rows are easy to tap.
+type touchTheme struct {
+	darkTheme
+}
+
+func (touchTheme) Size(n fyne.ThemeSizeName) float32 {
+	switch n {
+	case theme.SizeNameInnerPadding:
+		return 20
+	case theme.SizeNamePadding:
+		return 12
+	case theme.SizeNameText:
+		return 18
+	case theme.SizeNameInlineIcon:
+		return 28
+	}
+	return darkTheme{}.Size(n)
+}
+
+// themeFor returns the theme of the application: touch-sized on phones and
+// tablets, compact on desktop.
+func themeFor(mobile bool) fyne.Theme {
+	if mobile {
+		return touchTheme{}
+	}
+	return darkTheme{}
+}
+
+// touchMinHeight is the smallest height of a control a person taps on a phone (dp).
+const touchMinHeight = 64
+
+// touch keeps a control at least touchMinHeight high on phones and tablets. The
+// theme does not reach every control, so the height is given by the layout.
+// On desktop the control is returned unchanged.
+func (g *gui) touch(obj fyne.CanvasObject) fyne.CanvasObject {
+	if !g.mobile {
+		return obj
+	}
+	spacer := canvas.NewRectangle(color.Transparent)
+	spacer.SetMinSize(fyne.NewSize(0, touchMinHeight))
+	return container.NewStack(spacer, obj)
 }
