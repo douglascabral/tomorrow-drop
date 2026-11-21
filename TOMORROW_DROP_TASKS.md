@@ -64,14 +64,14 @@
 
 ## 06 — Fyne desktop interface
 
-[   ] 045. Create the Fyne application with a minimalist visual identity: two-mountains-and-sun logo, dark theme, simple hierarchy and accessible components.
-[   ] 046. Implement the home screen with Send, Receive, discovered devices, Refresh, manual connection and settings.
-[   ] 047. Implement the pairing screen with the complete fingerprints of both devices, cross-comparison guidance, explicit confirmation and cancellation.
-[   ] 048. Implement the trusted devices screen, fingerprint inspection and trust removal.
-[   ] 049. Implement file selection, text composition and content preview before sending.
-[   ] 050. Implement the manual “Send clipboard” action for text and links; add copied images only where the APIs support it, without automatic monitoring.
-[   ] 051. Implement the receive dialog with sender identity, names, sizes and Accept/Decline buttons.
-[   ] 052. Implement progress, cancellation, clear errors and a completion screen, without persistent history.
+[x] 045. Create the Fyne application with a minimalist visual identity: two-mountains-and-sun logo, dark theme, simple hierarchy and accessible components.
+[x] 046. Implement the home screen with Send, Receive, discovered devices, Refresh, manual connection and settings.
+[x] 047. Implement the pairing screen with the complete fingerprints of both devices, cross-comparison guidance, explicit confirmation and cancellation.
+[x] 048. Implement the trusted devices screen, fingerprint inspection and trust removal.
+[x] 049. Implement file selection, text composition and content preview before sending.
+[x] 050. Implement the manual “Send clipboard” action for text and links; add copied images only where the APIs support it, without automatic monitoring.
+[x] 051. Implement the receive dialog with sender identity, names, sizes and Accept/Decline buttons.
+[x] 052. Implement progress, cancellation, clear errors and a completion screen, without persistent history.
 [   ] 053. Implement desktop behavior: visible allows discovery/listener; minimized closes the listener and discovery but keeps only previously authorized transfers until they finish, fail or are cancelled; closing the app cancels everything.
 [   ] 054. Test the desktop GUI on Linux, Windows and macOS, including minimizing during a transfer, returning to the window, shutdown and file permissions.
 
