@@ -67,12 +67,12 @@ func (c *cmd) dispatch(args []string) error {
 	case "daemon":
 		return c.receiveCmd(rest, true)
 	}
-	return usage("cli.uso")
+	return cliError{code: exitUsage, key: "cli.unknown_command", args: []any{args[0]}}
 }
 
 func (c *cmd) identityCmd(args []string) error {
 	if len(args) != 1 || args[0] != "show" {
-		return usage("cli.uso")
+		return usage("cli.usage_identity")
 	}
 	id, err := c.identity()
 	if err != nil {
@@ -89,7 +89,7 @@ func (c *cmd) trustCmd(args []string) error {
 	if len(args) == 2 && args[0] == "remove" {
 		return c.trustRemove(args[1])
 	}
-	return usage("cli.uso")
+	return usage("cli.usage_trust")
 }
 
 func (c *cmd) trustList() error {
@@ -142,10 +142,11 @@ func (c *cmd) pairCmd(args []string) error {
 	fs := flag.NewFlagSet("pair", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	name := fs.String("name", "", "")
-	if err := fs.Parse(args); err != nil || fs.NArg() != 1 {
-		return usage("cli.uso")
+	rest, err := parseFlags(fs, args)
+	if err != nil || len(rest) != 1 {
+		return usage("cli.usage_pair")
 	}
-	ep, err := c.resolve(fs.Arg(0))
+	ep, err := c.resolve(rest[0])
 	if err != nil {
 		return err
 	}
@@ -170,7 +171,7 @@ func (c *cmd) pairWith(s *transport.Session, id *identity.Identity, name string)
 	chosen := name
 	got, err := pairing.Run(c.ctx, s, id, c.trustStore(), pairing.Prompts{
 		Confirm: func(local, remote identity.Fingerprint) bool {
-			c.say("%s", c.e.Tr.T("cli.pair_compare", local.Grouped(), remote.Grouped()))
+			c.say("%s", c.e.Tr.T("cli.pair_compare", indentBlock(local.Grouped()), indentBlock(remote.Grouped())))
 			return c.e.ask(c.stdout, c.e.Tr.T("cli.pair_confirm"))
 		},
 		Name: func(identity.Fingerprint) string {
@@ -195,13 +196,11 @@ func (c *cmd) sendCmd(args []string) error {
 	fs.SetOutput(io.Discard)
 	to := fs.String("to", "", "")
 	fromStdin := fs.Bool("stdin", false, "")
-	if err := fs.Parse(args); err != nil {
-		return usage("cli.uso")
+	rest, err := parseFlags(fs, args)
+	if err != nil || *to == "" {
+		return usage("cli.usage_send")
 	}
-	if *to == "" {
-		return usage("cli.flag_to_required")
-	}
-	spec, err := c.sendSpec(fs.Args(), *fromStdin)
+	spec, err := c.sendSpec(rest, *fromStdin)
 	if err != nil {
 		return err
 	}
@@ -226,7 +225,7 @@ func (c *cmd) sendCmd(args []string) error {
 		return err
 	}
 	if spec.Kind == transfer.KindFile {
-		c.say("%s", c.e.Tr.T("cli.sent_files", len(spec.Paths)))
+		c.say("%s", c.e.Tr.T("cli.sent_files", c.e.Tr.Count("count.file", len(spec.Paths))))
 	} else {
 		c.say("%s", c.e.Tr.T("cli.sent_text"))
 	}
@@ -237,7 +236,7 @@ func (c *cmd) sendCmd(args []string) error {
 func (c *cmd) sendSpec(paths []string, fromStdin bool) (transfer.SendSpec, error) {
 	if fromStdin {
 		if len(paths) != 0 {
-			return transfer.SendSpec{}, usage("cli.uso")
+			return transfer.SendSpec{}, usage("cli.usage_send")
 		}
 		data, err := io.ReadAll(io.LimitReader(c.e.In, limits.MaxTextBytes+1))
 		if err != nil {
@@ -249,7 +248,7 @@ func (c *cmd) sendSpec(paths []string, fromStdin bool) (transfer.SendSpec, error
 		return transfer.SendSpec{Kind: transfer.KindText, Text: string(data)}, nil
 	}
 	if len(paths) == 0 {
-		return transfer.SendSpec{}, usage("cli.uso")
+		return transfer.SendSpec{}, usage("cli.usage_send")
 	}
 	return transfer.SendSpec{Kind: transfer.KindFile, Paths: paths}, nil
 }
@@ -265,7 +264,7 @@ func (c *cmd) progress(spec transfer.SendSpec) func(transfer.Progress) {
 			return
 		}
 		last = p.TotalSent
-		c.warn("cli.progress", p.Name, p.TotalSent, p.TotalSize)
+		_, _ = fmt.Fprintln(c.stderr, progressLine(c.e.Tr, p.Name, p.TotalSent, p.TotalSize))
 	}
 }
 
@@ -314,13 +313,15 @@ func (c *cmd) discoverCmd(args []string) error {
 	fs.SetOutput(io.Discard)
 	var targets targetList
 	fs.Var(&targets, "target", "")
-	if err := fs.Parse(args); err != nil || fs.NArg() != 0 {
-		return usage("cli.uso")
+	if rest, err := parseFlags(fs, args); err != nil || len(rest) != 0 {
+		return usage("cli.usage_discover")
 	}
 	devices, err := c.scanWith(2*time.Second, targets)
 	if err != nil {
 		return err
 	}
+	// This device answers its own query; it is not one to send to.
+	devices = withoutSelf(devices, discovery.LocalAddresses(), defaultTCPPort)
 	if len(devices) == 0 {
 		c.say("%s", c.e.Tr.T("cli.discover_none"))
 		return nil
@@ -339,11 +340,15 @@ func (c *cmd) scan(wait time.Duration) ([]discovery.Device, error) {
 
 // scanWith is scan plus explicit targets, for networks where broadcast is blocked.
 func (c *cmd) scanWith(wait time.Duration, extra []netip.AddrPort) ([]discovery.Device, error) {
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		return nil, fmt.Errorf("list interfaces: %w", err)
+	var targets []netip.AddrPort
+	if !c.e.NoBroadcast {
+		addrs, err := net.InterfaceAddrs()
+		if err != nil {
+			return nil, fmt.Errorf("list interfaces: %w", err)
+		}
+		targets = discovery.BroadcastTargets(discovery.DefaultPort, addrs)
 	}
-	targets := append(discovery.BroadcastTargets(discovery.DefaultPort, addrs), extra...)
+	targets = append(targets, extra...)
 	sc, err := discovery.NewScanner(targets)
 	if err != nil {
 		return nil, err

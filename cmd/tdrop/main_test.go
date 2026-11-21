@@ -20,6 +20,9 @@ func portugueseEnv(t *testing.T) env {
 		Tr:         tr,
 		ConfigPath: filepath.Join(t.TempDir(), "settings.json"),
 		Home:       filepath.Join(t.TempDir(), "home"),
+		// Tests never query the real network: a device that happens to be on it
+		// would change their result.
+		NoBroadcast: true,
 	}
 }
 

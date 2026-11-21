@@ -14,11 +14,11 @@ import (
 
 	"tomorrow-drop/internal/apperr"
 	"tomorrow-drop/internal/discovery"
-	"tomorrow-drop/internal/i18n"
 	"tomorrow-drop/internal/identity"
 	"tomorrow-drop/internal/protocol"
 	"tomorrow-drop/internal/transfer"
 	"tomorrow-drop/internal/transport"
+	"tomorrow-drop/internal/ui"
 )
 
 // serveOptions configure receive and daemon.
@@ -41,11 +41,15 @@ func (c *cmd) receiveCmd(args []string, daemon bool) error {
 	out := fs.String("out", "", "")
 	deviceName := fs.String("name", "", "")
 	auto := fs.Bool("auto-accept-trusted", false, "")
-	if err := fs.Parse(args); err != nil || fs.NArg() != 0 {
-		return usage("cli.uso")
+	usageKey := "cli.usage_receive"
+	if daemon {
+		usageKey = "cli.usage_daemon"
+	}
+	if rest, err := parseFlags(fs, args); err != nil || len(rest) != 0 {
+		return usage(usageKey)
 	}
 	if *auto && !daemon {
-		return usage("cli.uso")
+		return usage(usageKey)
 	}
 	if *out == "" {
 		dir, err := transfer.DefaultDownloadsDir()
@@ -147,31 +151,14 @@ func (c *cmd) handleConn(conn net.Conn, id *identity.Identity, store transportTr
 // --auto-accept-trusted. Every other offer is shown and must be confirmed.
 func (c *cmd) decide(autoTrusted bool) transfer.Decision {
 	return func(_ context.Context, offer transfer.Offer) bool {
-		size := int64(0)
-		for _, it := range offer.Items {
-			size += it.Size
-		}
-		from := identity.Fingerprint{}
-		if fp, err := identity.FingerprintOf(offer.Peer); err == nil {
-			from = fp
-		}
+		peers, _ := c.trustStore().List()
+		from := peerLabel(peers, offer.Peer)
 		if autoTrusted {
-			c.say("%s", c.e.Tr.T("cli.offer_auto", len(offer.Items), size, from.Grouped()))
+			c.say("%s", c.e.Tr.T("cli.offer_auto", from, offerWhat(c.e.Tr, offer), ui.FormatBytes(offerSize(offer))))
 			return true
 		}
-		c.say("%s", c.e.Tr.T("cli.offer", kindLabel(c.e.Tr, offer.Kind), len(offer.Items), size, from.Grouped()))
+		c.say("%s", offerText(c.e.Tr, offer, from))
 		return c.e.ask(c.stdout, c.e.Tr.T("cli.offer_confirm"))
-	}
-}
-
-func kindLabel(tr *i18n.Bundle, k transfer.Kind) string {
-	switch k {
-	case transfer.KindText:
-		return tr.T("cli.kind.text")
-	case transfer.KindLink:
-		return tr.T("cli.kind.link")
-	default:
-		return tr.T("cli.kind.file")
 	}
 }
 

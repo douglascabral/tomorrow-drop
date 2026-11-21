@@ -66,6 +66,9 @@ func runCtx(ctx context.Context, args []string, stdout, stderr io.Writer, e env)
 	e.reader = bufio.NewReader(e.In)
 
 	switch {
+	case len(args) >= 1 && (args[0] == "help" || args[0] == "--help" || args[0] == "-h"):
+		_, _ = fmt.Fprintln(stdout, e.Tr.T("cli.help"))
+		return exitOK
 	case len(args) == 1 && args[0] == "version":
 		_, _ = fmt.Fprintln(stdout, e.Tr.T("cli.versao", version, protocol.CurrentVersion))
 		return exitOK

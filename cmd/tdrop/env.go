@@ -24,6 +24,10 @@ type env struct {
 	DiscoveryAddr string
 	// In is the source of answers to prompts; Stdin in production.
 	In io.Reader
+	// NoBroadcast stops discovery from querying the local network by broadcast,
+	// so only explicit targets are asked. Tests set it, so that they never reach
+	// the devices that happen to be on the real network.
+	NoBroadcast bool
 	// Ready, when set, receives the address the TLS listener bound to.
 	Ready func(netip.AddrPort)
 	// ReadyDiscovery, when set, receives the address the discovery listener bound to.

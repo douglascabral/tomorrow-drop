@@ -340,7 +340,7 @@ func TestSendWritesProgressToStderrAndResultToStdout(t *testing.T) {
 	recvAddr := <-recvReady
 	send := exec(t, ctx, a, "", "send", "--to", recvAddr.String(), path)
 	_ = waitResult(t, recvDone)
-	if send.code != 0 || !strings.Contains(send.stdout, "1 arquivo(s) enviado(s)") {
+	if send.code != 0 || !strings.Contains(send.stdout, "Enviado: 1 arquivo.") {
 		t.Fatalf("send stdout = %d %q", send.code, send.stdout)
 	}
 	if !strings.Contains(send.stderr, "p.bin") || strings.Contains(send.stdout, "bytes") {
