@@ -10,6 +10,7 @@ Free, minimalist application to transfer files, texts, links and clipboard conte
 
 - [PRD v1.9](docs/PRD.md): requirements, product decisions and acceptance criteria.
 - [Build](docs/BUILD.md): build for Linux, Windows and macOS.
+- [Versioning](docs/VERSIONING.md): Semantic Versioning, where the version is set and how to release.
 - [Protocol](docs/PROTOCOL.md): framing, version, states, limits and timeouts.
 - [Discovery and connectivity](docs/DISCOVERY.md): UDP datagrams, rate limits, query schedule, device list and manual connection.
 - [User guide](docs/USER_GUIDE.md): installation, pairing, sending, receiving, the 30-second rule and the limits.
