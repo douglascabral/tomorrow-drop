@@ -110,7 +110,7 @@ func validateFiles(items []Item) error {
 		}
 		total += it.Size
 		if total > limits.MaxOfferBytes {
-			return fmt.Errorf("offer above %d bytes: %w", limits.MaxOfferBytes, apperr.ErrLimitExceeded)
+			return fmt.Errorf("offer above %d bytes: %w", int64(limits.MaxOfferBytes), apperr.ErrLimitExceeded)
 		}
 	}
 	return nil

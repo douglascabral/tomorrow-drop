@@ -1,6 +1,7 @@
 package internal_test
 
 import (
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -43,4 +44,17 @@ func depsOf(t *testing.T, pkg string) []string {
 		t.Fatalf("go list -deps %s: %v\n%s", pkg, err, out)
 	}
 	return strings.Fields(string(out))
+}
+
+// Regression: the core must build for 32-bit platforms (Android armeabi-v7a,
+// 386). Limits above 2 GiB, passed as untyped constants to fmt, overflowed int
+// there and broke the Android build.
+func TestCoreBuildsOn32BitPlatforms(t *testing.T) {
+	for _, arch := range []string{"386", "arm"} {
+		cmd := exec.Command("go", "build", "./...") //nolint:gosec // G204: fixed go tool arguments in a test
+		cmd.Env = append(os.Environ(), "GOOS=linux", "GOARCH="+arch, "CGO_ENABLED=0")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("core does not build for GOARCH=%s: %v\n%s", arch, err, out)
+		}
+	}
 }
