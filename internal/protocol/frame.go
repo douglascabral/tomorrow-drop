@@ -1,5 +1,5 @@
 // Package protocol defines the framing, version, states and limits of the
-// transfer protocol. See docs/PROTOCOLO.md.
+// transfer protocol. See docs/PROTOCOL.md.
 package protocol
 
 import (

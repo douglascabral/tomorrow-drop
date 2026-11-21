@@ -39,7 +39,7 @@ go test .\...
 
 ## Full checks
 
-`scripts/check.sh` runs gofmt, golangci-lint, go vet, tests (with and without `-race`), lizard, semgrep and trivy. It requires all tools to be installed and fails if any is missing. See [QUALIDADE.md](QUALIDADE.md).
+`scripts/check.sh` runs gofmt, golangci-lint, go vet, tests (with and without `-race`), lizard, semgrep and trivy. It requires all tools to be installed and fails if any is missing. See [QUALITY.md](QUALITY.md).
 
 ## Reproducible binaries
 

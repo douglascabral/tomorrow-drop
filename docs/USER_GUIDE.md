@@ -4,7 +4,7 @@ Task 068. Installation, pairing, sending and receiving, and the limits of the ap
 
 ## Installation
 
-- **CLI (all desktop systems):** build from source with Go 1.24 or later. See `docs/COMPILACAO.md`.
+- **CLI (all desktop systems):** build from source with Go 1.24 or later. See `docs/BUILD.md`.
 - **macOS application:** `scripts/package-macos.sh` creates `dist/Tomorrow Drop.app`. It is not signed yet, so macOS asks you to confirm opening it (Control-click, Open). See `docs/PACKAGING.md`.
 - **Linux, Windows, Android and iOS/iPadOS:** no packages yet. See `docs/PACKAGING.md` and `docs/MOBILE.md`.
 

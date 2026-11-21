@@ -7,13 +7,13 @@ Task 064. Each item below names what the code does and the test that checks it. 
 - Generated with `crypto/rand` and stored as PKCS#8 PEM in `identity.key`. The directory is created with `0700` and the file with `0600` on POSIX systems (`TestCreateAppliesRestrictivePermissions`).
 - The key has no public accessor. Formatting (`%v`, `%+v`, `%#v`) never shows it (`TestFormattingDoesNotRevealPrivateKey`).
 - A corrupted or foreign key file is rejected and never silently replaced (`TestLoadOrCreateDoesNotOverwriteCorruptedFile`).
-- **Gap:** on Windows, Go's permission bits do not control ACLs. The key is protected only by the default ACLs of the user profile. This must be reviewed on Windows before release; it is recorded in `docs/IDENTIDADE.md`.
+- **Gap:** on Windows, Go's permission bits do not control ACLs. The key is protected only by the default ACLs of the user profile. This must be reviewed on Windows before release; it is recorded in `docs/IDENTITY.md`.
 
 ## Logs
 
 - The `safelog` package redacts fields named as private, secret, token, password, key, content, clipboard, payload, filename and path, and any `[]byte` value (`internal/safelog` tests).
 - The CLI and the GUI print fingerprints (public) and never print keys or transferred content. The only text printed for a received text is the text the person chose to receive, shown on the screen of the recipient.
-- Error messages shown to people are translations of error keys. Internal messages are not shown (task 004 and `docs/PADROES.md`).
+- Error messages shown to people are translations of error keys. Internal messages are not shown (task 004 and `docs/STANDARDS.md`).
 
 ## Temporary files
 
