@@ -11,17 +11,31 @@ import (
 type MessageType string
 
 const (
-	MsgHello         MessageType = "HELLO"
-	MsgPairConfirm   MessageType = "PAIR_CONFIRM"
-	MsgPairCancel    MessageType = "PAIR_CANCEL"
-	MsgTransferOffer MessageType = "TRANSFER_OFFER"
+	MsgHello           MessageType = "HELLO"
+	MsgPairConfirm     MessageType = "PAIR_CONFIRM"
+	MsgPairCancel      MessageType = "PAIR_CANCEL"
+	MsgTransferOffer   MessageType = "TRANSFER_OFFER"
+	MsgTransferAccept  MessageType = "TRANSFER_ACCEPT"
+	MsgTransferDecline MessageType = "TRANSFER_DECLINE"
+	MsgTransferData    MessageType = "TRANSFER_DATA"
+	MsgTransferEnd     MessageType = "TRANSFER_END"
+	MsgTransferDone    MessageType = "TRANSFER_DONE"
+	MsgTransferResult  MessageType = "TRANSFER_RESULT"
+	MsgTransferCancel  MessageType = "TRANSFER_CANCEL"
 )
 
 var knownTypes = map[MessageType]bool{
-	MsgHello:         true,
-	MsgPairConfirm:   true,
-	MsgPairCancel:    true,
-	MsgTransferOffer: true,
+	MsgHello:           true,
+	MsgPairConfirm:     true,
+	MsgPairCancel:      true,
+	MsgTransferOffer:   true,
+	MsgTransferAccept:  true,
+	MsgTransferDecline: true,
+	MsgTransferData:    true,
+	MsgTransferEnd:     true,
+	MsgTransferDone:    true,
+	MsgTransferResult:  true,
+	MsgTransferCancel:  true,
 }
 
 // Hello is the body of the HELLO message, listing the versions the peer supports.
@@ -56,7 +70,7 @@ func AllowedIn(state PeerState, kind MessageType) bool {
 	case StateAwaitingVerification:
 		return kind == MsgHello || kind == MsgPairConfirm || kind == MsgPairCancel
 	case StateTrusted:
-		return kind == MsgHello || kind == MsgTransferOffer
+		return kind == MsgHello || transferMessage(kind)
 	default:
 		return false
 	}
@@ -88,4 +102,15 @@ func DecodeMessage(data []byte) (Message, error) {
 		return Message{}, fmt.Errorf("message type %q: %w", msg.Type, apperr.ErrMalformed)
 	}
 	return msg, nil
+}
+
+// transferMessage reports whether kind belongs to the transfer exchange. These
+// messages are allowed only in the trusted state (PRD §8.1).
+func transferMessage(kind MessageType) bool {
+	switch kind {
+	case MsgTransferOffer, MsgTransferAccept, MsgTransferDecline, MsgTransferData,
+		MsgTransferEnd, MsgTransferDone, MsgTransferResult, MsgTransferCancel:
+		return true
+	}
+	return false
 }

@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
+	"time"
 
 	"tomorrow-drop/internal/apperr"
 	"tomorrow-drop/internal/identity"
@@ -164,6 +166,21 @@ func (s *Session) Receive() (protocol.Message, error) {
 		return protocol.Message{}, fmt.Errorf("%s received in %s: %w", msg.Type, s.state, apperr.ErrUnauthorized)
 	}
 	return msg, nil
+}
+
+// ReceiveWithin is Receive with a deadline. It fails with apperr.ErrTimeout if
+// no message arrives within d. After a timeout the connection must be closed.
+func (s *Session) ReceiveWithin(d time.Duration) (protocol.Message, error) {
+	if err := s.conn.SetReadDeadline(time.Now().Add(d)); err != nil {
+		return protocol.Message{}, fmt.Errorf("set read deadline: %w", err)
+	}
+	defer func() { _ = s.conn.SetReadDeadline(time.Time{}) }()
+	msg, err := s.Receive()
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return protocol.Message{}, fmt.Errorf("no message within %s: %w", d, apperr.ErrTimeout)
+	}
+	return msg, err
 }
 
 // Promote marks the session as trusted if the peer's key is in the trust list.

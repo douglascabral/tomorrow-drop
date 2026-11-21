@@ -92,3 +92,25 @@ func TestReadFrameCleanEOFReturnsEOF(t *testing.T) {
 		t.Fatalf("ReadFrame empty = %v, want io.EOF", err)
 	}
 }
+
+// timeoutReader fails every read with a network timeout, like a socket whose deadline passed.
+type timeoutReader struct{}
+
+type timeoutError struct{}
+
+func (timeoutError) Error() string   { return "i/o timeout" }
+func (timeoutError) Timeout() bool   { return true }
+func (timeoutError) Temporary() bool { return true }
+
+func (timeoutReader) Read([]byte) (int, error) { return 0, timeoutError{} }
+
+// Regression: a read deadline in the header must surface as ErrTimeout, not as a malformed frame.
+func TestReadFrameTimeoutIsNotMalformed(t *testing.T) {
+	_, err := ReadFrame(timeoutReader{})
+	if !errors.Is(err, apperr.ErrTimeout) {
+		t.Fatalf("ReadFrame on timeout = %v, want ErrTimeout", err)
+	}
+	if errors.Is(err, apperr.ErrMalformed) {
+		t.Fatalf("timeout was reported as a malformed frame")
+	}
+}

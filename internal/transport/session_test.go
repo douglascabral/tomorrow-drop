@@ -481,3 +481,14 @@ func pipeTCP(t *testing.T) (net.Conn, net.Conn) {
 	})
 	return client, r.conn
 }
+
+func TestReceiveWithinTimesOutOnSilence(t *testing.T) {
+	ctx := testContext(t)
+	cs, _, errCli, errSrv := dial(t, ctx, newID(t), newID(t), nil, newTrustStore(t), newTrustStore(t))
+	if errCli != nil || errSrv != nil {
+		t.Fatalf("handshake: %v / %v", errCli, errSrv)
+	}
+	if _, err := cs.ReceiveWithin(100 * time.Millisecond); !errors.Is(err, apperr.ErrTimeout) {
+		t.Fatalf("ReceiveWithin on silence = %v, want ErrTimeout", err)
+	}
+}

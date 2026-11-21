@@ -4,8 +4,10 @@ package protocol
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 
 	"tomorrow-drop/internal/apperr"
 	"tomorrow-drop/internal/limits"
@@ -40,7 +42,7 @@ func ReadFrame(r io.Reader) ([]byte, error) {
 		if err == io.EOF {
 			return nil, io.EOF
 		}
-		return nil, fmt.Errorf("incomplete header: %w", apperr.ErrMalformed)
+		return nil, readError("incomplete header", err)
 	}
 
 	size := binary.BigEndian.Uint32(header[:])
@@ -53,7 +55,17 @@ func ReadFrame(r io.Reader) ([]byte, error) {
 
 	payload := make([]byte, size)
 	if _, err := io.ReadFull(r, payload); err != nil {
-		return nil, fmt.Errorf("truncated body: %w", apperr.ErrMalformed)
+		return nil, readError("truncated body", err)
 	}
 	return payload, nil
+}
+
+// readError classifies a failed read. A network deadline is a timeout, not a
+// malformed frame, so callers can tell a silent peer from a corrupt one.
+func readError(what string, err error) error {
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return fmt.Errorf("%s: %w: %w", what, apperr.ErrTimeout, err)
+	}
+	return fmt.Errorf("%s: %w", what, apperr.ErrMalformed)
 }

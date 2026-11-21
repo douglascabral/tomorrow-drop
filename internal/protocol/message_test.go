@@ -81,3 +81,14 @@ func TestEncodeRejectsUnknownType(t *testing.T) {
 		t.Fatalf("EncodeMessage made-up type = %v, want ErrMalformed", err)
 	}
 }
+
+func TestTrustedPolicyAllowsTransferMessages(t *testing.T) {
+	for _, kind := range []MessageType{MsgTransferAccept, MsgTransferDecline, MsgTransferData, MsgTransferEnd, MsgTransferDone, MsgTransferResult, MsgTransferCancel} {
+		if !AllowedIn(StateTrusted, kind) {
+			t.Errorf("trusted state should allow %s", kind)
+		}
+		if AllowedIn(StateAwaitingVerification, kind) {
+			t.Errorf("provisional state must not allow %s", kind)
+		}
+	}
+}
