@@ -10,8 +10,10 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"tomorrow-drop/internal/apperr"
@@ -66,27 +68,31 @@ type job struct {
 
 // core holds the application's state. Access is guarded by mu.
 type core struct {
-	mu        sync.Mutex
-	tr        *i18n.Bundle
-	home      string
-	docsDir   string
-	name      string
-	id        *identity.Identity
-	store     *trust.Store
-	reg       *discovery.Registry
-	recv      *transfer.Receiver
-	addrs     map[string]string // fingerprint hex -> last address that answered
-	pair      *pendingPair
-	offer     *pendingOffer
-	jobs      []*job // operations in progress only: nothing is kept after they end
-	nextJob   int
-	result    *resultJSON // the outcome of the last operation, until the person closes it
-	received  *string     // a text received, shown until the person closes it
-	notice    string
-	listening bool
-	scanNow   chan struct{}
-	stop      context.CancelFunc
-	ctx       context.Context
+	mu      sync.Mutex
+	tr      *i18n.Bundle
+	home    string
+	docsDir string
+	name    string
+	id      *identity.Identity
+	store   *trust.Store
+	reg     *discovery.Registry
+	recv    *transfer.Receiver
+	addrs   map[string]string // fingerprint hex -> last address that answered
+	// presence is the last reachability check of each paired device; presenceBusy
+	// keeps one check at a time (startPresenceCheck).
+	presence     *discovery.Presence
+	presenceBusy atomic.Bool
+	pair         *pendingPair
+	offer        *pendingOffer
+	jobs         []*job // operations in progress only: nothing is kept after they end
+	nextJob      int
+	result       *resultJSON // the outcome of the last operation, until the person closes it
+	received     *string     // a text received, shown until the person closes it
+	notice       string
+	listening    bool
+	scanNow      chan struct{}
+	stop         context.CancelFunc
+	ctx          context.Context
 }
 
 // newCore opens the application's files in home and creates the identity on
@@ -108,10 +114,11 @@ func newCore(home, docsDir, name, lang string) (*core, error) {
 	}
 	c := &core{
 		tr: tr, home: home, docsDir: docsDir, name: name, id: id,
-		store:   trust.Open(filepath.Join(home, "trust.json")),
-		reg:     discovery.NewRegistry(90*time.Second, limits.MaxDiscoveredDevices),
-		addrs:   loadAddrs(home),
-		scanNow: make(chan struct{}, 1),
+		store:    trust.Open(filepath.Join(home, "trust.json")),
+		reg:      discovery.NewRegistry(90*time.Second, limits.MaxDiscoveredDevices),
+		addrs:    loadAddrs(home),
+		scanNow:  make(chan struct{}, 1),
+		presence: discovery.NewPresence(presenceTTL),
 	}
 	recv, err := transfer.NewReceiver(transfer.ReceiverConfig{
 		Decide:     c.askOffer,
@@ -167,6 +174,20 @@ func (c *core) startListeners(ctx context.Context) {
 	}); err != nil {
 		c.notice = c.tr.T(apperr.MessageKey(err))
 	}
+	// Paired devices are checked on their own timer, also when no scanner runs.
+	go func() {
+		t := time.NewTicker(scanEvery)
+		defer t.Stop()
+		c.startPresenceCheck()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-t.C:
+				c.startPresenceCheck()
+			}
+		}
+	}()
 	targets := discovery.BroadcastTargets(discoveryUDP, addrsOf(local))
 	if sc, err := discovery.NewScanner(targets); err == nil {
 		found := make(chan discovery.Announcement, 32)
@@ -188,6 +209,7 @@ func (c *core) startListeners(ctx context.Context) {
 					}
 				case <-c.scanNow:
 					_ = sc.Query(time.Now())
+					c.startPresenceCheck()
 				case <-t.C:
 					_ = sc.Query(time.Now())
 				}
@@ -451,8 +473,15 @@ func (c *core) state() stateJSON {
 	peers, _ := c.store.List()
 	for _, p := range peers {
 		addr := c.addrs[p.Fingerprint.Hex()]
-		st.Paired = append(st.Paired, pairedJSON{Name: p.Name, Fingerprint: p.Fingerprint.Grouped(), Hex: p.Fingerprint.Hex(), Addr: addr})
+		st.Paired = append(st.Paired, pairedJSON{
+			Name: p.Name, Fingerprint: p.Fingerprint.Grouped(), Hex: p.Fingerprint.Hex(), Addr: addr,
+			Presence: c.presenceText(addr, now),
+		})
 	}
+	// Online devices first, then the others in their stored order.
+	sort.SliceStable(st.Paired, func(i, j int) bool {
+		return st.Paired[i].Presence == "online" && st.Paired[j].Presence != "online"
+	})
 	pairedAt := map[string]trust.Peer{}
 	for _, p := range peers {
 		if a, ok := c.addrs[p.Fingerprint.Hex()]; ok {
@@ -554,6 +583,82 @@ func (c *core) ctxOrBackground() context.Context {
 		return c.ctx
 	}
 	return context.Background()
+}
+
+// presenceText is the presence of the device last seen at addr, as the interface
+// names it: "online", "offline" or "unknown" (never checked, or too old).
+func (c *core) presenceText(addr string, now time.Time) string {
+	ep, err := netip.ParseAddrPort(addr)
+	if err != nil {
+		return "unknown"
+	}
+	switch c.presence.State(ep, now) {
+	case discovery.PresenceOnline:
+		return "online"
+	case discovery.PresenceOffline:
+		return "offline"
+	default:
+		return "unknown"
+	}
+}
+
+// startPresenceCheck checks the paired devices in the background. It does
+// nothing while a transfer or a pairing is on screen, or while a check runs, and
+// reports whether it started one. It never blocks the caller.
+func (c *core) startPresenceCheck() bool {
+	c.mu.Lock()
+	busy := len(c.jobs) > 0 || c.pair != nil
+	c.mu.Unlock()
+	if busy || !c.presenceBusy.CompareAndSwap(false, true) {
+		return false
+	}
+	go func() {
+		defer c.presenceBusy.Store(false)
+		c.checkPresence()
+	}()
+	return true
+}
+
+// checkPresence probes the last known address of every paired device.
+func (c *core) checkPresence() {
+	c.mu.Lock()
+	peers, _ := c.store.List()
+	var eps []netip.AddrPort
+	for _, p := range peers {
+		if text, ok := c.addrs[p.Fingerprint.Hex()]; ok {
+			if ep, err := netip.ParseAddrPort(text); err == nil {
+				eps = append(eps, ep)
+			}
+		}
+	}
+	c.mu.Unlock()
+	if len(eps) == 0 {
+		return
+	}
+	c.presence.Check(c.ctxOrBackground(), eps, protocol.PresenceTimeout)
+}
+
+// presenceTTL is how long a reachability check counts as current: two discovery
+// rounds and the probe timeout.
+const presenceTTL = 2*protocol.DiscoveryInterval + protocol.PresenceTimeout
+
+// unpair removes a device from the trust list, and forgets the address it was
+// seen at and its reachability.
+func (c *core) unpair(peer trust.Peer) error {
+	if err := c.store.Remove(peer.Fingerprint); err != nil {
+		return err
+	}
+	c.mu.Lock()
+	addr, known := c.addrs[peer.Fingerprint.Hex()]
+	delete(c.addrs, peer.Fingerprint.Hex())
+	saveAddrs(c.home, c.addrs)
+	c.mu.Unlock()
+	if known {
+		if ep, err := netip.ParseAddrPort(addr); err == nil {
+			c.presence.Forget(ep)
+		}
+	}
+	return nil
 }
 
 // pairedByHex returns the paired device with this fingerprint (hex).

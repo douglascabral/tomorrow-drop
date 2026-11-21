@@ -96,7 +96,7 @@ The iPhone and iPad app does not use Fyne. The Fyne iOS driver draws with OpenGL
 
 Screens of the iPhone and iPad app (`ios/TomorrowDrop/Screens`), checked by type-checking against the iPhone Simulator SDK (`swiftc -typecheck`), not run on a device yet:
 
-- Home: a **Paired devices** section (from the trust store, so it survives a restart and needs no announcement), then **Devices found** without the paired ones.
+- Home: a **Paired devices** section (from the trust store, so it survives a restart and needs no announcement), then **Devices found** without the paired ones. Each paired device shows Online, Offline, or Paired until it is checked; the check is a TCP connect to its last address, every 30 seconds while the app is open (`cmd/tomorrow-drop-ios/presence_test.go`, type-checked in Swift; not run on a device yet).
 - Connect by IP: two fields, IP address and port, with the port filled in (47521).
 - The screen of a paired device: Send files, Send text, Send clipboard, Receive (a waiting screen: the other device sends by itself while the app is open, and each transfer still needs the person's authorization), Rename, Unpair.
 

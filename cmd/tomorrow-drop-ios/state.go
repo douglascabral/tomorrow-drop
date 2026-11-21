@@ -15,6 +15,8 @@ type pairedJSON struct {
 	Fingerprint string `json:"fingerprint"`
 	Hex         string `json:"hex"`
 	Addr        string `json:"addr,omitempty"`
+	// Presence is "online", "offline" or "unknown" (see core.presenceText).
+	Presence string `json:"presence"`
 }
 
 type pairJSON struct {

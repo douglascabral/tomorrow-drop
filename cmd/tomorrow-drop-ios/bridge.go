@@ -223,13 +223,9 @@ func tdUnpair(fingerprintHex *C.char) C.int {
 	if !ok {
 		return 1
 	}
-	if err := c.store.Remove(peer.Fingerprint); err != nil {
+	if err := c.unpair(peer); err != nil {
 		return 1
 	}
-	c.mu.Lock()
-	delete(c.addrs, peer.Fingerprint.Hex())
-	saveAddrs(c.home, c.addrs)
-	c.mu.Unlock()
 	return 0
 }
 

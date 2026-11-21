@@ -102,14 +102,32 @@ struct PairedRow: View {
 
     private var label: some View {
         HStack {
-            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
+            Image(systemName: paired.presence == "offline" ? "circle" : "checkmark.circle.fill")
+                .foregroundColor(paired.presence == "offline" ? .secondary : .green)
             VStack(alignment: .leading, spacing: 2) {
                 Text(paired.name)
                 Text(paired.addr ?? L.t("No known address", "Sem endereço conhecido"))
                     .font(.system(.caption, design: .monospaced)).foregroundColor(.secondary)
             }
             Spacer()
-            Text(L.t("Paired", "Pareado")).font(.footnote).foregroundColor(.green)
+            Text(statusText).font(.footnote).foregroundColor(statusColor)
+        }
+    }
+
+    // statusText is the reachability of the device: Online, Offline, or Paired
+    // while it has not been checked yet.
+    private var statusText: String {
+        switch paired.presence {
+        case "online": return L.t("Online", "Online")
+        case "offline": return L.t("Offline", "Offline")
+        default: return L.t("Paired", "Pareado")
+        }
+    }
+
+    private var statusColor: Color {
+        switch paired.presence {
+        case "offline": return .secondary
+        default: return .green
         }
     }
 }

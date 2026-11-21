@@ -35,6 +35,8 @@ struct AppState: Codable {
         var fingerprint: String
         var hex: String
         var addr: String?
+        // "online", "offline" or "unknown": the last reachability check (presence.go).
+        var presence: String?
     }
 
     struct PairQuestion: Codable {
