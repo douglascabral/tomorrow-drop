@@ -80,7 +80,7 @@ bench: ## Run the 64 MiB transfer benchmark once
 deps: ## Print the license of every module in the build graph
 	scripts/dependency-report.sh
 
-package-macos: ## Build the unsigned macOS application bundle into dist/
+package-macos: ## Build the unsigned macOS app bundles (arm64 and amd64) into dist/
 	scripts/package-macos.sh
 
 package-linux: ## Build the Linux amd64 application as a .deb in dist/ (needs Docker, dpkg)

@@ -6,7 +6,7 @@ Task 069 and the build parts of task 067. Scripts live in `scripts/`.
 
 | Target | Status | Evidence |
 |---|---|---|
-| macOS (arm64) application bundle | Built, **unsigned** | `scripts/package-macos.sh`; the bundle identifier, name, version and icon were checked with `PlistBuddy` |
+| macOS application bundles (arm64 and amd64) | Built, **unsigned** | `scripts/package-macos.sh`; each binary was checked with `lipo`, and the bundle identifier, name, version, Local Network key and icon with `PlistBuddy` |
 | macOS signing and notarization | Not done | Needs a Developer ID certificate and an Apple account, which this project does not have yet |
 | Linux and Windows packages | Not done | Needs their native toolchains (cgo with the graphics libraries of each system); no such machine was used |
 | Android and iOS/iPadOS packages | Not done | See `docs/MOBILE.md`; needs the Android SDK/NDK, Xcode and devices |
@@ -23,7 +23,16 @@ The packaging tool is `fyne` from `fyne.io/tools` (v1.7.4 used here; it reports 
 make package-macos
 ```
 
-The target builds `build/tools/fyne-ios15` if it is missing (see "Patches of the packaging tool" below), so `go install` is not needed. The bundle goes to `dist/Tomorrow Drop.app`; it is replaced on each run.
+The target builds `build/tools/fyne-ios15` if it is missing (see "Patches of the packaging tool" below), so `go install` is not needed.
+
+It produces two bundles, one per processor architecture, each with its own binary:
+
+- `dist/TomorrowDrop-macos-arm64.app` for Apple silicon;
+- `dist/TomorrowDrop-macos-amd64.app` for Intel Macs.
+
+Each run replaces them. `MACOS_ARCHES=arm64 make package-macos` builds only the listed architectures. The binaries are compiled with `CGO_ENABLED=1` by the Apple toolchain of this machine (Xcode); the amd64 build runs on an Apple silicon Mac without Rosetta, because only the compiler targets that architecture. Each bundle is checked with `lipo` before packaging, so a wrong architecture stops the build.
+
+Both bundles are tested here only as built files; they were not started on Intel hardware.
 
 ## Reproducibility
 
