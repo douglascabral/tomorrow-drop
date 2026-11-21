@@ -30,6 +30,8 @@ type DeviceRow struct {
 	Trusted bool
 	// StatusKey is the translation key of the status label.
 	StatusKey string
+	// Presence is the last reachability check of a paired device (presence.go).
+	Presence discovery.PresenceState
 }
 
 // DeviceRows orders discovered devices with trusted ones first, then by name.

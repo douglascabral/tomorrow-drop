@@ -2,11 +2,13 @@ package main
 
 import (
 	"sort"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
+	"tomorrow-drop/internal/discovery"
 	"tomorrow-drop/internal/ui"
 )
 
@@ -36,23 +38,40 @@ type homeItemParts struct {
 	row          fyne.CanvasObject
 }
 
-// pairedRows lists the paired devices from the trust store. A device whose
-// address is not known yet has no address, and says so.
+// pairedRows lists the paired devices from the trust store, with the result of
+// their last reachability check. A device whose address is not known yet has no
+// address, and says so. Online devices come first, then by name.
 func (g *gui) pairedRows() []ui.DeviceRow {
 	peers, err := g.store.List()
 	if err != nil {
 		return nil
 	}
 	addrs := g.pairedAddresses()
+	now := time.Now()
 	rows := make([]ui.DeviceRow, 0, len(peers))
 	for _, p := range peers {
 		row := ui.DeviceRow{Name: p.Name, Address: addrs[p.Fingerprint.Hex()], Trusted: true, StatusKey: "ui.status.trusted"}
 		if row.Address == "" {
 			row.StatusKey = "ui.status.no_address"
+		} else if ep, err := manualEndpoint(row.Address); err == nil {
+			row.Presence = g.presence.State(ep, now)
+			switch row.Presence {
+			case discovery.PresenceOnline:
+				row.StatusKey = "ui.status.online"
+			case discovery.PresenceOffline:
+				row.StatusKey = "ui.status.offline"
+			}
 		}
 		rows = append(rows, row)
 	}
-	sort.SliceStable(rows, func(i, j int) bool { return rows[i].Name < rows[j].Name })
+	sort.SliceStable(rows, func(i, j int) bool {
+		oi := rows[i].Presence == discovery.PresenceOnline
+		oj := rows[j].Presence == discovery.PresenceOnline
+		if oi != oj {
+			return oi
+		}
+		return rows[i].Name < rows[j].Name
+	})
 	return rows
 }
 

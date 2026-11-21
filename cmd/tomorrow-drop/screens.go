@@ -20,6 +20,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"tomorrow-drop/internal/apperr"
+	"tomorrow-drop/internal/discovery"
 	"tomorrow-drop/internal/limits"
 	"tomorrow-drop/internal/protocol"
 	"tomorrow-drop/internal/settings"
@@ -244,7 +245,8 @@ func (g *gui) fillDeviceRow(obj fyne.CanvasObject, row ui.DeviceRow) {
 	// The row was laid out before its texts were known; lay it out again so the
 	// status gets its full width.
 	obj.Refresh()
-	if row.Trusted {
+	// An offline paired device keeps its name but loses the check icon.
+	if row.Trusted && row.Presence != discovery.PresenceOffline {
 		parts.status.Importance = widget.SuccessImportance
 		parts.icon.SetResource(theme.ConfirmIcon())
 		parts.icon.Show()
@@ -903,6 +905,8 @@ func (g *gui) markListed(ep netip.AddrPort, name string, byAddress bool) {
 		_ = g.reg.Pin(ep, name, time.Now())
 	}
 	g.reg.MarkTrusted(ep, true)
+	// The connection just succeeded, so the device is online now.
+	g.presence.Record(ep, true, time.Now())
 }
 
 // sendTo dials the destination and sends. A device that is not trusted is never

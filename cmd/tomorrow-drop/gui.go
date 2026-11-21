@@ -95,6 +95,10 @@ type gui struct {
 	// paired remembers which paired device answered at each address (paired.go).
 	pairedMu sync.Mutex
 	paired   map[netip.AddrPort]trust.Peer
+	// presence is the last reachability check of each paired device, and
+	// presenceBusy keeps one check at a time (presence_check.go).
+	presence     *discovery.Presence
+	presenceBusy atomic.Bool
 	// screenOn keeps the screen on (true) or lets it turn off (false). Only
 	// phones use it; main sets it from the platform driver.
 	screenOn func(bool)
@@ -139,6 +143,7 @@ func newGUI(ctx context.Context, tr *i18n.Bundle, home, cfgPath string, save tra
 		rowParts:  map[fyne.CanvasObject]*deviceRowParts{},
 		homeParts: map[fyne.CanvasObject]*homeItemParts{},
 		paired:    map[netip.AddrPort]trust.Peer{},
+		presence:  discovery.NewPresence(presenceTTL),
 		addrs:     discovery.LocalAddresses,
 	}
 	recv, err := transfer.NewReceiver(transfer.ReceiverConfig{
@@ -299,6 +304,8 @@ func (g *gui) observe(a discovery.Announcement) {
 
 func (g *gui) queryAll(now time.Time) error {
 	g.queries.Add(1)
+	// Paired devices are checked on the same schedule as discovery (presence_check.go).
+	g.startPresenceCheck()
 	g.scanMu.Lock()
 	sc := g.scanner
 	g.scanMu.Unlock()

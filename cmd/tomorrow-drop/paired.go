@@ -53,12 +53,20 @@ func (g *gui) unpairDevice(peer trust.Peer) error {
 	if err := g.store.Remove(peer.Fingerprint); err != nil {
 		return err
 	}
+	// The address the device was last seen at, kept on disk, is forgotten too,
+	// even when this session never connected to it.
+	if text, ok := g.pairedAddresses()[peer.Fingerprint.Hex()]; ok {
+		if ep, err := manualEndpoint(text); err == nil {
+			g.presence.Forget(ep)
+		}
+	}
 	g.pairedMu.Lock()
 	for ep, p := range g.paired {
 		if bytes.Equal(p.Key, peer.Key) {
 			delete(g.paired, ep)
 			g.reg.MarkTrusted(ep, false)
 			g.reg.Unpin(ep)
+			g.presence.Forget(ep)
 		}
 	}
 	g.pairedMu.Unlock()
