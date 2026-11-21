@@ -1,0 +1,8 @@
+# Metadata used by `fyne package` for every platform (docs/MOBILE.md, docs/PACKAGING.md).
+# The ID must match app.NewWithID in cmd/tomorrow-drop/main.go.
+[Details]
+  Icon = "assets/icon.png"
+  Name = "Tomorrow Drop"
+  ID = "org.tomorrowdrop.app"
+  Version = "0.1.0"
+  Build = 1
