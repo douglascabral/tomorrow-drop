@@ -3,6 +3,8 @@ package i18n
 import (
 	"encoding/json"
 	"io/fs"
+	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -170,4 +172,41 @@ func loadEmbedded(t *testing.T, lang string) map[string]string {
 		t.Fatalf("JSON of %s: %v", lang, err)
 	}
 	return m
+}
+
+// A placeholder that differs between languages shows "%!s(MISSING)" or "%!(EXTRA
+// ...)" at run time, so every key must use the same placeholders in order.
+func TestEmbeddedCatalogsUseTheSamePlaceholders(t *testing.T) {
+	pt := loadEmbedded(t, "pt-BR")
+	en := loadEmbedded(t, "en")
+	verbs := regexp.MustCompile(`%[-+# 0-9.]*[a-zA-Z]`)
+	for key, enValue := range en {
+		ptValue, ok := pt[key]
+		if !ok {
+			continue
+		}
+		if got, want := verbs.FindAllString(ptValue, -1), verbs.FindAllString(enValue, -1); strings.Join(got, ",") != strings.Join(want, ",") {
+			t.Errorf("key %q: pt-BR uses %v, en uses %v", key, got, want)
+		}
+	}
+}
+
+// A counted noun agrees with the number: the singular for one, the plural with
+// the number otherwise.
+func TestCountAgreesWithTheNumber(t *testing.T) {
+	cases := map[string]map[int]string{
+		"en":    {0: "0 files", 1: "1 file", 2: "2 files"},
+		"pt-BR": {0: "0 arquivos", 1: "1 arquivo", 2: "2 arquivos"},
+	}
+	for lang, byN := range cases {
+		tr, err := Load(lang)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for n, want := range byN {
+			if got := tr.Count("count.file", n); got != want {
+				t.Errorf("%s Count(%d) = %q, want %q", lang, n, got, want)
+			}
+		}
+	}
 }

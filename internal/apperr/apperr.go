@@ -9,6 +9,8 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"os"
+	"syscall"
 )
 
 var (
@@ -29,6 +31,9 @@ var (
 	// ErrNoOffer means a connection ended before any transfer started. It is not
 	// a failed transfer, so interfaces do not report it.
 	ErrNoOffer = errors.New("no transfer offer received")
+	// ErrPeerWantsToPair means a device the receiver still has paired asks to pair
+	// again: it unpaired this device on its side.
+	ErrPeerWantsToPair = errors.New("paired device asks to pair again")
 )
 
 // keys maps each sentinel to its translation key (see internal/i18n/locales).
@@ -51,11 +56,18 @@ var keys = []struct {
 	{ErrIntegrity, "error.integrity"},
 	{ErrBusy, "error.busy"},
 	{ErrNoOffer, "error.no_offer"},
+	{ErrPeerWantsToPair, "error.peer_wants_to_pair"},
 	// Standard errors that mean a broken connection or a folder that cannot be
 	// written. They are named so the person knows what to check.
 	{io.ErrUnexpectedEOF, "error.connection_lost"},
 	{io.EOF, "error.connection_lost"},
 	{fs.ErrPermission, "error.permission"},
+	// A device that is off, not running the app or off the network.
+	{syscall.ECONNREFUSED, "error.unreachable"},
+	{syscall.EHOSTUNREACH, "error.no_route"},
+	{syscall.ENETUNREACH, "error.no_route"},
+	{os.ErrDeadlineExceeded, "error.timeout"},
+	{context.DeadlineExceeded, "error.timeout"},
 }
 
 // MessageKey returns the translation key for err, so interfaces can show a

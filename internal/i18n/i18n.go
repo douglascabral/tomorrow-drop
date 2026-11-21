@@ -54,6 +54,16 @@ func Load(lang string) (*Bundle, error) {
 	return NewBundle(lang, catalog), nil
 }
 
+// Count writes a counted noun so it agrees with the number: the key with the
+// suffix _one for 1, and the key with _other, which takes the number, for any
+// other count ("1 file", "2 files").
+func (b *Bundle) Count(key string, n int) string {
+	if n == 1 {
+		return b.T(key + "_one")
+	}
+	return b.T(key+"_other", n)
+}
+
 // T returns the text for the key. With args, it applies fmt.Sprintf. If the
 // key exists in no language, it returns the key itself.
 func (b *Bundle) T(key string, args ...any) string {

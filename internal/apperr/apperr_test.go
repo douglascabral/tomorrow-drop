@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
+	"os"
+	"syscall"
 	"testing"
 )
 
@@ -79,6 +82,22 @@ func TestMessageKeyNamesConnectionAndPermissionProblems(t *testing.T) {
 	cases := map[string]error{
 		"error.connection_lost": fmt.Errorf("read frame: %w", io.ErrUnexpectedEOF),
 		"error.permission":      fmt.Errorf("create file: %w", fs.ErrPermission),
+	}
+	for want, err := range cases {
+		if got := MessageKey(err); got != want {
+			t.Errorf("MessageKey(%v) = %q, want %q", err, got, want)
+		}
+	}
+}
+
+// Regression: sending to a device that is off, or not on the network, showed
+// "An unexpected error occurred". The person is told what to check.
+func TestMessageKeyNamesUnreachableDevices(t *testing.T) {
+	refused := &net.OpError{Op: "dial", Net: "tcp", Err: &os.SyscallError{Syscall: "connect", Err: syscall.ECONNREFUSED}}
+	cases := map[string]error{
+		"error.unreachable": fmt.Errorf("dial: %w", refused),
+		"error.no_route":    fmt.Errorf("dial: %w", syscall.EHOSTUNREACH),
+		"error.timeout":     fmt.Errorf("dial: %w", os.ErrDeadlineExceeded),
 	}
 	for want, err := range cases {
 		if got := MessageKey(err); got != want {
