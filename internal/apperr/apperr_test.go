@@ -90,6 +90,27 @@ func TestMessageKeyNamesConnectionAndPermissionProblems(t *testing.T) {
 	}
 }
 
+// Regression: on Windows a device that does not answer fails with the Winsock
+// codes (10061 refused, 10051 network unreachable, 10065 host unreachable), which
+// Go does not report as the syscall constants, so the person saw "An unexpected
+// error occurred" on the Windows CI job. The codes are mapped on every system.
+func TestMessageKeyNamesWindowsSocketErrors(t *testing.T) {
+	cases := []struct {
+		err  syscall.Errno
+		want string
+	}{
+		{syscall.Errno(10061), "error.unreachable"}, // WSAECONNREFUSED
+		{syscall.Errno(10051), "error.no_route"},    // WSAENETUNREACH
+		{syscall.Errno(10065), "error.no_route"},    // WSAEHOSTUNREACH
+	}
+	for _, c := range cases {
+		err := fmt.Errorf("connect: %w", c.err)
+		if got := MessageKey(err); got != c.want {
+			t.Errorf("MessageKey(%v) = %q, want %q", err, got, c.want)
+		}
+	}
+}
+
 // Regression: sending to a device that is off, or not on the network, showed
 // "An unexpected error occurred". The person is told what to check.
 func TestMessageKeyNamesUnreachableDevices(t *testing.T) {

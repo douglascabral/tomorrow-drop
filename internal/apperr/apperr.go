@@ -66,6 +66,12 @@ var keys = []struct {
 	{syscall.ECONNREFUSED, "error.unreachable"},
 	{syscall.EHOSTUNREACH, "error.no_route"},
 	{syscall.ENETUNREACH, "error.no_route"},
+	// Windows reports the same cases with Winsock codes that Go does not export
+	// as syscall constants: 10061 refused, 10051 network unreachable, 10065 host
+	// unreachable. The numbers are fixed by the Windows API.
+	{syscall.Errno(10061), "error.unreachable"},
+	{syscall.Errno(10051), "error.no_route"},
+	{syscall.Errno(10065), "error.no_route"},
 	{os.ErrDeadlineExceeded, "error.timeout"},
 	{context.DeadlineExceeded, "error.timeout"},
 }
