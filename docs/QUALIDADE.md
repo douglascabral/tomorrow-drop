@@ -28,6 +28,16 @@ The script fails if any tool is missing. Checks are never skipped silently.
 - Job `test`, on Linux, Windows and macOS: gofmt, go vet, go test and go test -race.
 - Job `quality`, on Linux: `scripts/check.sh` with all tools installed.
 
+## Fuzzing
+
+The parsers that read network or file input have fuzz targets (`Fuzz*` functions). Their seed corpora run in the normal test suite. For a longer run:
+
+```sh
+go test -run='^$' -fuzz='^FuzzReadFrame$' -fuzztime=10m ./internal/protocol/
+```
+
+See `docs/SECURITY_REVIEW.md` for the targets and the results of the last run.
+
 ## False positives
 
 False positives must be investigated and documented here, with the justification, before any exclusion. Do not disable checks broadly to get past an alert.
