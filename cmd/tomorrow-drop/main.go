@@ -8,6 +8,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -37,7 +38,11 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	g, err := newGUI(ctx, tr, defaultHome(), path)
+	// On phones the platform chooses where each received file is saved; the
+	// desktop keeps saving into Downloads (PRD §14.1).
+	var g *gui
+	ask := func(name string) (io.WriteCloser, error) { return g.saveLocation(name) }
+	g, err = newGUI(ctx, tr, defaultHome(), path, receiveDestination(fyne.CurrentDevice().IsMobile(), ask))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

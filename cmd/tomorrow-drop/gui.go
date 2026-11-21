@@ -69,7 +69,9 @@ type gui struct {
 	rows        []ui.DeviceRow
 }
 
-func newGUI(ctx context.Context, tr *i18n.Bundle, home, cfgPath string) (*gui, error) {
+// newGUI builds the application state. save picks where received files go; nil
+// means the Downloads folder, which is used on desktop.
+func newGUI(ctx context.Context, tr *i18n.Bundle, home, cfgPath string, save transfer.Destination) (*gui, error) {
 	id, err := identity.Store{Dir: home}.LoadOrCreate()
 	if err != nil {
 		return nil, err
@@ -89,10 +91,11 @@ func newGUI(ctx context.Context, tr *i18n.Bundle, home, cfgPath string) (*gui, e
 		rowParts: map[fyne.CanvasObject]*deviceRowParts{},
 	}
 	recv, err := transfer.NewReceiver(transfer.ReceiverConfig{
-		Decide:     g.askOffer,
-		StagingDir: filepath.Join(home, "staging"),
-		DestDir:    downloads,
-		OnProgress: g.onReceiveProgress,
+		Decide:      g.askOffer,
+		StagingDir:  filepath.Join(home, "staging"),
+		DestDir:     downloads,
+		Destination: save,
+		OnProgress:  g.onReceiveProgress,
 	})
 	if err != nil {
 		return nil, err

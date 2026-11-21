@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"net/netip"
 	"path/filepath"
@@ -31,7 +32,7 @@ func newTestGUI(t *testing.T) *gui {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 	home := t.TempDir()
-	g, err := newGUI(ctx, tr, home, filepath.Join(home, "settings.json"))
+	g, err := newGUI(ctx, tr, home, filepath.Join(home, "settings.json"), nil)
 	if err != nil {
 		t.Fatalf("newGUI: %v", err)
 	}
@@ -192,5 +193,36 @@ func TestDeviceRowFillsItsOwnLabels(t *testing.T) {
 	parts := g.rowParts[item]
 	if parts == nil || parts.name.Text != "MacBook" || parts.address.Text != "192.168.1.42:47521" {
 		t.Fatalf("row labels not filled: %+v", parts)
+	}
+}
+
+// Receiving on a phone asks where to save each file. If the app stops while
+// the question is open, the receiver must get a cancellation, not wait forever.
+func TestSaveLocationStopsWhenTheAppStops(t *testing.T) {
+	g := newTestGUI(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	g.ctx = ctx
+	cancel()
+
+	w, err := g.saveLocation("report.pdf")
+	if !errors.Is(err, apperr.ErrCanceled) {
+		t.Fatalf("saveLocation error = %v, want ErrCanceled", err)
+	}
+	if w != nil {
+		t.Fatal("saveLocation returned a writer after cancellation")
+	}
+}
+
+// Regression: on phones received files were published into ~/Downloads, which
+// does not exist there, so every transfer failed when saving. Phones must use
+// the platform save location; desktops keep the Downloads folder.
+func TestReceiveDestinationUsesPlatformSaveOnPhones(t *testing.T) {
+	ask := func(string) (io.WriteCloser, error) { return nil, apperr.ErrCanceled }
+
+	if _, ok := receiveDestination(true, ask).(transfer.WriterDestination); !ok {
+		t.Fatal("phone receive destination is not the platform save location")
+	}
+	if receiveDestination(false, ask) != nil {
+		t.Fatal("desktop receive destination must stay nil so the receiver uses Downloads")
 	}
 }
