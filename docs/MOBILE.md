@@ -1,6 +1,14 @@
 # Android and iOS/iPadOS
 
-Tasks 055 to 061 (block 07). This document records the requirements and what was verified. **No mobile build was produced and no device was tested in this environment.** The tasks stay open until they are run on real hardware.
+Tasks 055 to 061 (block 07). This document records the requirements and what was verified. **No device was tested in this environment.** The tasks stay open until they run on real hardware.
+
+## iOS build status
+
+- Xcode 27.2 is installed and selected (`xcode-select -p` points to `Xcode.app/Contents/Developer`). The iPhoneOS and iPhoneSimulator SDKs are present.
+- A development signing identity ("Apple Development") exists in the keychain. No provisioning profile is installed.
+- `fyne package --target ios` (from `cmd/tomorrow-drop`) produces an arm64 iOS bundle, `dist/Tomorrow-Drop.app`, with `MinimumOSVersion` 15.0 and the bundle ID `org.tomorrowdrop.app`. The bundle is **not signed**.
+- The official Fyne tool (v1.7.4) hard-codes `IPHONEOS_DEPLOYMENT_TARGET = 13.0` in its Xcode project template, and Xcode 27.2 rejects it (the minimum it accepts is 15.0). The build used a local copy of the tool with that one value changed to 15.0. This is a deviation from the official tool; it must go away once the official tool is updated or the project template is overridden.
+- To install on a device, the bundle needs a provisioning profile for `org.tomorrowdrop.app` that includes the device UDID, and the signing identity must match the team. Those depend on the developer account and must be set by the owner of the account.
 
 ## 055 — Build requirements (to confirm on a machine with the SDKs)
 

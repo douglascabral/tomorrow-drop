@@ -45,6 +45,16 @@ Architecture rule: the core never imports Fyne. Platform-specific integrations s
 
 Requirements: Go 1.24 or later.
 
+The `Makefile` wraps the common tasks. Run `make help` to list them:
+
+```sh
+make cli       # bin/tdrop, without cgo
+make test      # go test ./...
+make check     # the full validation required by AGENTS.md
+```
+
+The plain commands also work:
+
 ```sh
 go test ./...
 go test -race ./...
