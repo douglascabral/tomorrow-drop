@@ -26,14 +26,26 @@ struct HomeView: View {
                 .padding(.vertical, 8)
             }
 
+            // Paired devices come from the trust store, so they stay here even when
+            // no announcement reaches this device (another VLAN, or the app was reopened).
+            Section(header: Text(L.t("Paired devices", "Dispositivos pareados"))) {
+                if core.state.paired.isEmpty {
+                    Text(L.t("No paired devices yet.", "Nenhum dispositivo pareado ainda.")).foregroundColor(.secondary)
+                }
+                ForEach(core.state.paired) { p in
+                    PairedRow(paired: p)
+                }
+            }
+
             Section(header: Text(L.t("Devices found", "Dispositivos encontrados"))) {
-                if core.state.devices.isEmpty {
+                let found = core.state.devices.filter { !$0.paired }
+                if found.isEmpty {
                     Text(L.t("Looking for devices…", "Procurando dispositivos…")).foregroundColor(.secondary)
                     Text(L.t("Open Tomorrow Drop on the other device, on the same Wi-Fi network.",
                              "Abra o Tomorrow Drop no outro dispositivo, na mesma rede Wi-Fi."))
                         .font(.footnote).foregroundColor(.secondary)
                 }
-                ForEach(core.state.devices) { device in
+                ForEach(found) { device in
                     DeviceRow(device: device)
                 }
             }
@@ -71,6 +83,34 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showFingerprint) { FingerprintView() }
         .sheet(isPresented: $showConnect) { ConnectView() }
+    }
+}
+
+// PairedRow is a paired device on the home screen. Its actions (send, receive)
+// are on the device screen. A device whose address is not known yet cannot be
+// opened from here until it is connected to by IP once.
+struct PairedRow: View {
+    let paired: AppState.Paired
+
+    var body: some View {
+        if let addr = paired.addr, !addr.isEmpty {
+            NavigationLink(destination: DeviceView(hex: paired.hex, addr: addr)) { label }
+        } else {
+            label
+        }
+    }
+
+    private var label: some View {
+        HStack {
+            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(paired.name)
+                Text(paired.addr ?? L.t("No known address", "Sem endereço conhecido"))
+                    .font(.system(.caption, design: .monospaced)).foregroundColor(.secondary)
+            }
+            Spacer()
+            Text(L.t("Paired", "Pareado")).font(.footnote).foregroundColor(.green)
+        }
     }
 }
 
@@ -152,22 +192,37 @@ struct FingerprintView: View {
 struct ConnectView: View {
     @ObservedObject var core = Core.shared
     @Environment(\.dismiss) private var dismiss
-    @State private var address = ""
+    @State private var ip = ""
+    // The port the other device listens on; it is the usual one, so it is filled in.
+    @State private var port = "47521"
+
+    private var ready: Bool {
+        !ip.trimmingCharacters(in: .whitespaces).isEmpty && !port.trimmingCharacters(in: .whitespaces).isEmpty
+    }
 
     var body: some View {
         NavigationView {
             Form {
-                Section(footer: Text(L.t("Enter the IP address and port shown on the other device.",
-                                         "Informe o endereço IP e a porta mostrados no outro dispositivo."))) {
-                    TextField("192.168.1.42:47521", text: $address)
+                Section(
+                    header: Text(L.t("IP address", "Endereço IP")),
+                    footer: Text(L.t("Enter the IP address and port shown on the other device.",
+                                     "Informe o endereço IP e a porta mostrados no outro dispositivo."))
+                ) {
+                    TextField("192.168.1.42", text: $ip)
                         .keyboardType(.numbersAndPunctuation)
                         .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                }
+                Section(header: Text(L.t("Port", "Porta"))) {
+                    TextField("47521", text: $port)
+                        .keyboardType(.numberPad)
                 }
                 Button(L.t("Connect", "Conectar")) {
-                    core.pair(with: address.trimmingCharacters(in: .whitespaces))
+                    let address = ip.trimmingCharacters(in: .whitespaces) + ":" + port.trimmingCharacters(in: .whitespaces)
+                    core.pair(with: address)
                     dismiss()
                 }
-                .disabled(address.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(!ready)
             }
             .navigationTitle(L.t("Connect by IP", "Conectar por IP"))
             .navigationBarTitleDisplayMode(.inline)

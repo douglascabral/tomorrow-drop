@@ -8,6 +8,7 @@ struct DeviceView: View {
 
     @State private var showFiles = false
     @State private var showText = false
+    @State private var showReceive = false
     @State private var showRename = false
     @State private var showUnpair = false
     @State private var newName = ""
@@ -32,6 +33,7 @@ struct DeviceView: View {
                 Button { showFiles = true } label: { Label(L.t("Send files", "Enviar arquivos"), systemImage: "square.and.arrow.up") }
                 Button { showText = true } label: { Label(L.t("Send text", "Enviar texto"), systemImage: "doc.text") }
                 Button { sendClipboard() } label: { Label(L.t("Send clipboard", "Enviar área de transferência"), systemImage: "doc.on.clipboard") }
+                Button { showReceive = true } label: { Label(L.t("Receive", "Receber"), systemImage: "square.and.arrow.down") }
             }
 
             Section(header: Text(L.t("Fingerprint (SHA-256)", "Impressão digital (SHA-256)"))) {
@@ -68,6 +70,7 @@ struct DeviceView: View {
             if case .success(let urls) = result { sendFiles(urls) }
         }
         .sheet(isPresented: $showText) { TextSendView(addr: addr) }
+        .sheet(isPresented: $showReceive) { ReceiveWaitingView() }
         .alert(L.t("Rename device", "Renomear dispositivo"), isPresented: $showRename) {
             TextField(L.t("Name", "Nome"), text: $newName)
             Button(L.t("Save", "Salvar")) {
@@ -121,6 +124,35 @@ struct DeviceView: View {
             return
         }
         message = L.t("The clipboard is empty.", "A área de transferência está vazia.")
+    }
+}
+
+// ReceiveWaitingView says that files from this device arrive by themselves while
+// the app is open: each one still waits for the person's authorization.
+struct ReceiveWaitingView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 12) {
+                Image(systemName: "square.and.arrow.down").font(.system(size: 56)).foregroundColor(.accentColor)
+                Text(L.t("Waiting for files", "Aguardando arquivos")).font(.headline)
+                Text(L.t("Waiting for the other device to send files to you.",
+                         "Aguardando o outro dispositivo enviar arquivos para você."))
+                    .multilineTextAlignment(.center)
+                Text(L.t("The transfer starts automatically after you authorize it.",
+                         "O envio será iniciado automaticamente após a sua autorização."))
+                    .font(.footnote).italic().foregroundColor(.secondary).multilineTextAlignment(.center)
+            }
+            .padding()
+            .navigationTitle(L.t("Receive", "Receber"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(L.t("Close", "Fechar")) { dismiss() }
+                }
+            }
+        }
     }
 }
 

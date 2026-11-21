@@ -94,6 +94,12 @@ The iPhone and iPad app does not use Fyne. The Fyne iOS driver draws with OpenGL
 - `ios/` is the SwiftUI app, generated with XcodeGen from `ios/project.yml`. `TomorrowDrop/Core/Core.swift` reads the state every second and sends the answers; the screens are in `TomorrowDrop/Screens/`.
 - `make install-ios` (`scripts/install-ios.sh`) builds the library for the iPhone SDK, generates the project, builds it with the team of the Apple Development certificate (automatic signing) and installs it on the connected iPhone or iPad. The app is copied to `dist/TomorrowDrop-ios-arm64.app`, with the identifier `br.com.douglascabral.tomorrowdrop`.
 
+Screens of the iPhone and iPad app (`ios/TomorrowDrop/Screens`), checked by type-checking against the iPhone Simulator SDK (`swiftc -typecheck`), not run on a device yet:
+
+- Home: a **Paired devices** section (from the trust store, so it survives a restart and needs no announcement), then **Devices found** without the paired ones.
+- Connect by IP: two fields, IP address and port, with the port filled in (47521).
+- The screen of a paired device: Send files, Send text, Send clipboard, Receive (a waiting screen: the other device sends by itself while the app is open, and each transfer still needs the person's authorization), Rename, Unpair.
+
 Requirements: Xcode signed in to the Apple account, XcodeGen (`brew install xcodegen`), the device unlocked, paired and in developer mode. A profile of a free Apple account expires after 7 days; the command must be run again then.
 
 On the first launch the app asks for the local network: allow it, or discovery and pairing do not work. Received files are saved in the app's Documents, which the Files app shows (Tomorrow Drop folder).
