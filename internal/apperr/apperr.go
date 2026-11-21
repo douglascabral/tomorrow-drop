@@ -19,6 +19,8 @@ var (
 	ErrVersionMismatch = errors.New("incompatible protocol version")
 	ErrAlreadyTrusted  = errors.New("device already trusted")
 	ErrNotTrusted      = errors.New("device not trusted")
+	ErrNoRoute         = errors.New("no network route")
+	ErrRateLimited     = errors.New("too many requests")
 )
 
 // keys maps each sentinel to its translation key (see internal/i18n/locales).
@@ -35,6 +37,8 @@ var keys = []struct {
 	{ErrVersionMismatch, "error.version_mismatch"},
 	{ErrAlreadyTrusted, "error.already_trusted"},
 	{ErrNotTrusted, "error.not_trusted"},
+	{ErrNoRoute, "error.no_route"},
+	{ErrRateLimited, "error.rate_limited"},
 }
 
 // MessageKey returns the translation key for err, so interfaces can show a

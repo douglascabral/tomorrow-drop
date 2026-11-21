@@ -18,5 +18,7 @@
   "error.already_trusted": "Este dispositivo já é confiável.",
   "error.not_trusted": "Este dispositivo não é confiável.",
   "error.unknown": "Ocorreu um erro inesperado.",
-  "cli.erro_ler": "não foi possível ler a configuração: %s"
+  "cli.erro_ler": "não foi possível ler a configuração: %s",
+  "error.no_route": "Não há rota de rede disponível para a descoberta.",
+  "error.rate_limited": "Muitas solicitações. Aguarde um momento e tente novamente."
 }

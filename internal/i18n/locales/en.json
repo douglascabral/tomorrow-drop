@@ -18,5 +18,7 @@
   "error.already_trusted": "This device is already trusted.",
   "error.not_trusted": "This device is not trusted.",
   "error.unknown": "An unexpected error occurred.",
-  "cli.erro_ler": "could not read the configuration: %s"
+  "cli.erro_ler": "could not read the configuration: %s",
+  "error.no_route": "No network route is available for discovery.",
+  "error.rate_limited": "Too many requests. Wait a moment and try again."
 }
