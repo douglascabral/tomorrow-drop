@@ -110,7 +110,6 @@ func (g *gui) showHome() {
 	// This device's fingerprint sits under its address, always at hand: it is what
 	// the other person compares when pairing. A tap shows the whole of it.
 	fingerprint := g.fingerprintButton()
-	devicesTitle := newLabelStyled(g.tr.T("gui.home.devices"), fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 	headItems := []fyne.CanvasObject{}
 	if g.sharedWaiting() {
 		g.pendingMu.Lock()
@@ -126,7 +125,8 @@ func (g *gui) showHome() {
 		)),
 		fingerprint,
 		newLabelStyled(g.tr.T("gui.home.visible_only_open"), fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
-		container.NewBorder(nil, nil, nil, refresh, g.compact(devicesTitle)),
+		// The section titles are in the list (home_list.go); only Refresh is fixed.
+		container.NewBorder(nil, nil, nil, refresh),
 	)...)
 	foot := container.NewVBox(manual, settingsBtn)
 	// With no device the list is not blank: it says it is looking, and what to do.
@@ -245,22 +245,24 @@ func (g *gui) fillDeviceRow(obj fyne.CanvasObject, row ui.DeviceRow) {
 	// The row was laid out before its texts were known; lay it out again so the
 	// status gets its full width.
 	obj.Refresh()
-	// Only a device that answered its last check is green with the check icon.
-	// An offline one is red without it; one not checked yet is neutral.
+	// A paired device is online (green check) or offline (red cross): there is no
+	// grey presence state. A found device shows a neutral computer. Every line
+	// keeps its icon, so the names line up.
 	switch {
 	case row.Trusted && row.Presence == discovery.PresenceOnline:
 		parts.status.Importance = widget.SuccessImportance
-		parts.icon.SetResource(theme.ConfirmIcon())
-		parts.icon.Show()
-	case row.Presence == discovery.PresenceOffline:
+		parts.icon.SetResource(theme.NewSuccessThemedResource(theme.ConfirmIcon()))
+	case row.Trusted:
 		parts.status.Importance = widget.DangerImportance
-		parts.icon.SetResource(nil)
-		parts.icon.Hide()
+		parts.icon.SetResource(theme.NewErrorThemedResource(theme.CancelIcon()))
 	default:
 		parts.status.Importance = widget.LowImportance
-		parts.icon.SetResource(nil)
-		parts.icon.Hide()
+		parts.icon.SetResource(theme.ComputerIcon())
 	}
+	parts.icon.Show()
+	// The importance is drawn only on a refresh. The list reuses rows, so without
+	// this the status kept the colour of the device the row showed before.
+	parts.status.Refresh()
 }
 
 // openDevice opens a trusted device (layout 5) or starts pairing with a new one (layout 2).

@@ -121,7 +121,6 @@
   "gui.trusted.remove": "Unpair",
   "gui.trusted.title": "Paired devices",
   "ui.status.discovered": "Tap to pair",
-  "ui.status.no_address": "No known address",
   "ui.status.online": "Online",
   "ui.status.offline": "Offline",
   "gui.home.no_address_hint": "This device has no known address yet. Connect to it by IP once to use it from here.",

@@ -121,7 +121,6 @@
   "gui.trusted.remove": "Desparear",
   "gui.trusted.title": "Dispositivos pareados",
   "ui.status.discovered": "Toque para parear",
-  "ui.status.no_address": "Sem endereço conhecido",
   "ui.status.online": "Online",
   "ui.status.offline": "Offline",
   "gui.home.no_address_hint": "Este dispositivo ainda não tem endereço conhecido. Conecte a ele por IP uma vez para usá-lo daqui.",

@@ -6,6 +6,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
 	"tomorrow-drop/internal/discovery"
@@ -35,12 +36,15 @@ type homeItem struct {
 // a note, or a device line. Only the one the line needs is shown.
 type homeItemParts struct {
 	header, note *widget.Label
-	row          fyne.CanvasObject
+	// headerBox and noteBox hold the labels centred in the line's height.
+	headerBox, noteBox fyne.CanvasObject
+	row                fyne.CanvasObject
 }
 
-// pairedRows lists the paired devices from the trust store, with the result of
-// their last reachability check. A device whose address is not known yet has no
-// address, and says so. Online devices come first, then by name.
+// pairedRows lists the paired devices from the trust store. A paired device is
+// either online (it answered its last check) or offline: a device with no
+// current answer, or no known address, counts as offline. Online devices come
+// first, then by name.
 func (g *gui) pairedRows() []ui.DeviceRow {
 	peers, err := g.store.List()
 	if err != nil {
@@ -50,16 +54,11 @@ func (g *gui) pairedRows() []ui.DeviceRow {
 	now := time.Now()
 	rows := make([]ui.DeviceRow, 0, len(peers))
 	for _, p := range peers {
-		row := ui.DeviceRow{Name: p.Name, Address: addrs[p.Fingerprint.Hex()], Trusted: true, StatusKey: "ui.status.trusted"}
-		if row.Address == "" {
-			row.StatusKey = "ui.status.no_address"
-		} else if ep, err := manualEndpoint(row.Address); err == nil {
+		row := ui.DeviceRow{Name: p.Name, Address: addrs[p.Fingerprint.Hex()], Trusted: true, StatusKey: "ui.status.offline"}
+		if ep, err := manualEndpoint(row.Address); err == nil && row.Address != "" {
 			row.Presence = g.presence.State(ep, now)
-			switch row.Presence {
-			case discovery.PresenceOnline:
+			if row.Presence == discovery.PresenceOnline {
 				row.StatusKey = "ui.status.online"
-			case discovery.PresenceOffline:
-				row.StatusKey = "ui.status.offline"
 			}
 		}
 		rows = append(rows, row)
@@ -117,8 +116,13 @@ func (g *gui) newHomeItem() fyne.CanvasObject {
 	header := newLabelStyled("", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 	note := newLabelStyled("", fyne.TextAlignCenter, fyne.TextStyle{Italic: true})
 	note.Importance = widget.LowImportance
-	parts := &homeItemParts{header: header, note: note, row: g.newDeviceRow()}
-	wrap := container.NewStack(header, note, parts.row)
+	parts := &homeItemParts{
+		header: header, note: note, row: g.newDeviceRow(),
+		// A title or a note sits in the middle of its line, not at the top of a tall one.
+		headerBox: container.NewVBox(layout.NewSpacer(), container.NewPadded(header), layout.NewSpacer()),
+		noteBox:   container.NewVBox(layout.NewSpacer(), note, layout.NewSpacer()),
+	}
+	wrap := container.NewStack(parts.headerBox, parts.noteBox, parts.row)
 	g.homeParts[wrap] = parts
 	return wrap
 }
@@ -130,16 +134,16 @@ func (g *gui) fillHomeItem(i int, obj fyne.CanvasObject) {
 		return
 	}
 	it := g.homeList[i]
-	parts.header.Hide()
-	parts.note.Hide()
+	parts.headerBox.Hide()
+	parts.noteBox.Hide()
 	parts.row.Hide()
 	switch it.kind {
 	case homeHeader:
 		parts.header.SetText(it.title)
-		parts.header.Show()
+		parts.headerBox.Show()
 	case homeNote:
 		parts.note.SetText(it.title)
-		parts.note.Show()
+		parts.noteBox.Show()
 	case homeDevice:
 		g.fillDeviceRow(parts.row, it.row)
 		parts.row.Show()

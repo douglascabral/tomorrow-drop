@@ -63,14 +63,14 @@ func TestPairedDeviceRowShowsIcon(t *testing.T) {
 		t.Fatalf("online paired device row has no icon")
 	}
 	unchecked := g.newDeviceRow()
-	g.fillDeviceRow(unchecked, ui.DeviceRow{Name: "laptop", Address: "10.0.0.2:47521", Trusted: true, StatusKey: "ui.status.trusted"})
-	if parts := g.rowParts[unchecked]; parts == nil || parts.icon.Visible() {
+	g.fillDeviceRow(unchecked, ui.DeviceRow{Name: "laptop", Address: "10.0.0.2:47521", Trusted: true, StatusKey: "ui.status.offline"})
+	if parts := g.rowParts[unchecked]; parts == nil || parts.icon.Resource == nil || parts.icon.Resource.Name() == checkIconName() {
 		t.Fatalf("paired device not checked yet shows the online icon")
 	}
 
 	found := g.newDeviceRow()
 	g.fillDeviceRow(found, ui.DeviceRow{Name: "phone", Address: "10.0.0.3:47521", StatusKey: "ui.status.discovered"})
-	if parts := g.rowParts[found]; parts == nil || parts.icon.Visible() {
+	if parts := g.rowParts[found]; parts == nil || parts.icon.Resource == nil || parts.icon.Resource.Name() == checkIconName() || parts.icon.Resource.Name() == crossIconName() {
 		t.Fatalf("discovered device row shows a paired icon")
 	}
 }

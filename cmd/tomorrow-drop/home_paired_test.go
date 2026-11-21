@@ -10,6 +10,8 @@ import (
 
 // pairedItems returns the device lines of the home list that belong to paired
 // devices, and foundItems those of devices only discovery has seen.
+func endpoint(s string) netip.AddrPort { return netip.MustParseAddrPort(s) }
+
 func pairedItems(g *gui) []homeItem {
 	var out []homeItem
 	for _, it := range g.homeList {
@@ -86,7 +88,7 @@ func TestPairedDeviceWithoutAddressSaysItCannotBeOpened(t *testing.T) {
 	_ = pairedDevice(t, g)
 	g.refreshDevices()
 	paired := pairedItems(g)
-	if len(paired) != 1 || paired[0].row.Address != "" || paired[0].row.StatusKey != "ui.status.no_address" {
+	if len(paired) != 1 || paired[0].row.Address != "" || paired[0].row.StatusKey != "ui.status.offline" {
 		t.Fatalf("paired device without address = %+v", paired)
 	}
 }
@@ -116,4 +118,39 @@ func homeHasHeader(g *gui, title string) bool {
 		}
 	}
 	return false
+}
+
+// Regression: a fixed "Devices found" title sat above the list, so it appeared
+// before "Paired devices" and again after it. The section titles belong to the
+// list only, and paired devices come first.
+func TestSectionTitlesAreOnlyInTheListAndPairedComeFirst(t *testing.T) {
+	g := newTestGUI(t)
+	_ = pairedAndRemembered(t, g)
+	if err := g.reg.Observe(discovery.Announcement{Name: "phone", Addr: endpoint("10.0.0.9:47521"), Seen: time.Now()}, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	g.showHome()
+
+	fixed := labelTexts(g.win.Content())
+	for _, title := range []string{g.tr.T("gui.home.devices"), g.tr.T("gui.home.trusted")} {
+		if contains(fixed, title) {
+			t.Fatalf("the title %q is fixed above the list; fixed texts = %v", title, fixed)
+		}
+	}
+
+	pairedAt, foundAt := -1, -1
+	for i, it := range g.homeList {
+		if it.kind != homeHeader {
+			continue
+		}
+		switch it.title {
+		case g.tr.T("gui.home.trusted"):
+			pairedAt = i
+		case g.tr.T("gui.home.devices"):
+			foundAt = i
+		}
+	}
+	if pairedAt < 0 || foundAt < 0 || pairedAt > foundAt {
+		t.Fatalf("section order: paired header at %d, found header at %d; want paired first", pairedAt, foundAt)
+	}
 }
