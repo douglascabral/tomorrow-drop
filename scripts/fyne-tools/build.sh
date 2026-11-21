@@ -18,7 +18,7 @@ cp -R "$src/." "$work/"
 chmod -R u+w "$work"
 
 patch -d "$work" -p1 < "$root/scripts/fyne-tools/ios-deployment-and-local-network.patch"
-patch -d "$work" -p1 < "$root/scripts/fyne-tools/android-keep-screen-on.patch"
+patch -d "$work" -p1 < "$root/scripts/fyne-tools/android-manifest.patch"
 
 mkdir -p "$out"
 (cd "$work" && go build -o "$out/fyne-ios15" ./cmd/fyne)
