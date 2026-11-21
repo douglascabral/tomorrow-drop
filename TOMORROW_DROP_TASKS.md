@@ -38,18 +38,18 @@
 
 ## 04 — Protocol and transfer
 
-[   ] 025. Implement the connection and transfer state machine, with cancellation, timeouts, concurrency limits and deterministic cleanup.
-[   ] 026. Define offer metadata (type, names, sizes and count), path validation and limits to prevent traversal and resource exhaustion.
-[   ] 027. Implement receive requests with authenticated identity and mandatory accept/decline for **each** transfer, including between trusted devices.
-[   ] 028. Implement text and link transfer over authenticated TLS 1.3, without persistent history.
-[   ] 029. Implement single-file sending in streaming mode, without loading all content into memory.
-[   ] 030. Implement multiple-file sending, with individual and total progress and defined behavior for partial failure.
-[   ] 031. Implement writing received data to temporary files with unpredictable names, size validation, content hash and completion confirmation.
-[   ] 032. Implement secure publication of the completed file, avoiding silent overwrite and name collisions; use an atomic operation when supported.
-[   ] 033. Implement cancellation, error, timeout and connection drop: invalidate the transfer, delete partial data and require resending from the first byte.
-[   ] 034. Implement cleanup of temporary files abandoned by unexpected shutdowns, without deleting files not belonging to the application.
-[   ] 035. Implement default saving to Downloads on desktop and a storage abstraction for native Android and iOS mechanisms.
-[   ] 036. Create tests for integrity, large files, empty files, multiple files, failures at 99%, malicious names, limits and concurrency.
+[x] 025. Implement the connection and transfer state machine, with cancellation, timeouts, concurrency limits and deterministic cleanup.
+[x] 026. Define offer metadata (type, names, sizes and count), path validation and limits to prevent traversal and resource exhaustion.
+[x] 027. Implement receive requests with authenticated identity and mandatory accept/decline for **each** transfer, including between trusted devices.
+[x] 028. Implement text and link transfer over authenticated TLS 1.3, without persistent history.
+[x] 029. Implement single-file sending in streaming mode, without loading all content into memory.
+[x] 030. Implement multiple-file sending, with individual and total progress and defined behavior for partial failure.
+[x] 031. Implement writing received data to temporary files with unpredictable names, size validation, content hash and completion confirmation.
+[x] 032. Implement secure publication of the completed file, avoiding silent overwrite and name collisions; use an atomic operation when supported.
+[x] 033. Implement cancellation, error, timeout and connection drop: invalidate the transfer, delete partial data and require resending from the first byte.
+[x] 034. Implement cleanup of temporary files abandoned by unexpected shutdowns, without deleting files not belonging to the application.
+[x] 035. Implement default saving to Downloads on desktop and a storage abstraction for native Android and iOS mechanisms.
+[x] 036. Create tests for integrity, large files, empty files, multiple files, failures at 99%, malicious names, limits and concurrency.
 
 ## 05 — CLI
 

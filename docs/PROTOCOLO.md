@@ -88,6 +88,10 @@ Defined in `internal/protocol/timeouts.go`:
 
 The values of `HandshakeTimeout`, `DecisionTimeout` and `IdleTimeout` are engineering decisions, not PRD requirements, and may be adjusted with a record in this section.
 
-## 8. Errors
+## 8. Transfer messages
+
+Transfer messages (`TRANSFER_*`) are allowed only in the trusted state. Their bodies, rules and failure handling are in [TRANSFERS.md](TRANSFERS.md).
+
+## 9. Errors
 
 Protocol errors use the sentinels of `internal/apperr`: `ErrMalformed`, `ErrLimitExceeded`, `ErrTimeout`, `ErrCanceled`, `ErrUnauthorized`, `ErrIdentityChanged` and `ErrVersionMismatch`. Error messages sent to the peer do not include sensitive local data.
