@@ -58,11 +58,14 @@ func droppedPaths(uris []fyne.URI) []string {
 		if u.Scheme() != "file" {
 			continue
 		}
-		info, err := os.Stat(u.Path())
+		// A file URI carries slashes on every system; the path kept must be the
+		// system's own (C:\... on Windows), as the file dialogs return it.
+		path := filepath.FromSlash(u.Path())
+		info, err := os.Stat(path)
 		if err != nil || !info.Mode().IsRegular() {
 			continue
 		}
-		paths = append(paths, u.Path())
+		paths = append(paths, path)
 	}
 	return paths
 }
