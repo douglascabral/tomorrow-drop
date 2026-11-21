@@ -22,7 +22,7 @@ FUZZ_TARGETS := \
 	./internal/trust:FuzzTrustFile
 
 .DEFAULT_GOAL := help
-.PHONY: help build cli gui cross test race vet fmt fmt-fix lint check fuzz bench deps package-macos install-android run run-cli run-dev clean
+.PHONY: help build cli gui cross test race vet fmt fmt-fix lint check fuzz bench deps package-macos install-android install-ios run run-cli run-dev clean
 
 help: ## Show this help
 	@echo "Tomorrow Drop make targets:"
@@ -82,6 +82,9 @@ package-macos: ## Build the unsigned macOS application bundle into dist/
 
 install-android: ## Build the Android APK and install it on the connected phone
 	scripts/install-android.sh
+
+install-ios: ## Build the iPhone/iPad app and install it on the connected device (scripts/install-ios.sh)
+	scripts/install-ios.sh
 
 run: gui ## Build and open the graphical app with your real settings
 	$(BIN)/tomorrow-drop
