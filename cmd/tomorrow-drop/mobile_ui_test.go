@@ -219,3 +219,15 @@ func TestTouchKeepsPickersLargeOnlyOnMobile(t *testing.T) {
 		t.Fatalf("desktop control was wrapped; it must stay as it is")
 	}
 }
+
+// Other devices find this one only while the app is open and in front, on every
+// platform (desktop loses the front when its window is not focused). The home
+// screen says so, in a small line, so the person knows before leaving the app.
+func TestHomeSaysItIsFoundOnlyWhileOpen(t *testing.T) {
+	g := newTestGUI(t)
+	g.showHome()
+	want := g.tr.T("gui.home.visible_only_open")
+	if !contains(labelTexts(g.win.Content()), want) {
+		t.Fatalf("home does not say the app is found only while open; texts = %v", labelTexts(g.win.Content()))
+	}
+}

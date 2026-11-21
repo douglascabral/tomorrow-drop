@@ -210,5 +210,6 @@
   "ios.send.text_title": "Enviando texto",
   "ios.receive.running": "Recebendo arquivos",
   "ios.background.title": "Transferência interrompida",
-  "ios.background.message": "O app saiu da tela e o outro dispositivo não conseguiu alcançá-lo. Mantenha o app aberto durante as transferências."
+  "ios.background.message": "O app saiu da tela e o outro dispositivo não conseguiu alcançá-lo. Mantenha o app aberto durante as transferências.",
+  "gui.home.visible_only_open": "Visível só com o app aberto."
 }

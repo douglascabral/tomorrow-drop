@@ -210,5 +210,6 @@
   "ios.send.text_title": "Sending text",
   "ios.receive.running": "Receiving files",
   "ios.background.title": "Transfer interrupted",
-  "ios.background.message": "The app left the screen, so the other device could not reach it. Keep the app open during transfers."
+  "ios.background.message": "The app left the screen, so the other device could not reach it. Keep the app open during transfers.",
+  "gui.home.visible_only_open": "Visible only while the app is open."
 }

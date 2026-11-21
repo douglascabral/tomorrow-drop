@@ -124,6 +124,7 @@ func (g *gui) showHome() {
 			thisDevice,
 		)),
 		fingerprint,
+		newLabelStyled(g.tr.T("gui.home.visible_only_open"), fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
 		container.NewBorder(nil, nil, nil, refresh, g.compact(devicesTitle)),
 	)...)
 	foot := container.NewVBox(manual, settingsBtn)
