@@ -1,0 +1,32 @@
+# The Xcode project of the native iPhone and iPad app. Generated with XcodeGen:
+#   cd ios && xcodegen generate
+# The Go core is built first into ../build/ios (see scripts/install-ios.sh).
+name: TomorrowDrop
+options:
+  bundleIdPrefix: br.com.douglascabral
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    CODE_SIGN_STYLE: Automatic
+    TARGETED_DEVICE_FAMILY: "1,2"
+    SWIFT_OBJC_BRIDGING_HEADER: TomorrowDrop/Core/Bridging.h
+    HEADER_SEARCH_PATHS: "$(PROJECT_DIR)/../build/ios"
+    LIBRARY_SEARCH_PATHS: "$(PROJECT_DIR)/../build/ios"
+    OTHER_LDFLAGS: "-ltdrop -lresolv"
+targets:
+  TomorrowDrop:
+    type: application
+    platform: iOS
+    sources:
+      - TomorrowDrop
+    settings:
+      base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.douglascabral.tomorrowdrop
+        PRODUCT_NAME: TomorrowDrop
+        INFOPLIST_FILE: TomorrowDrop/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        ENABLE_BITCODE: NO
+    dependencies: []
