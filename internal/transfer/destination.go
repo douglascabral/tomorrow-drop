@@ -2,6 +2,7 @@ package transfer
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -34,4 +35,36 @@ func DefaultDownloadsDir() (string, error) {
 		return "", fmt.Errorf("locate home directory: %w", err)
 	}
 	return filepath.Join(home, "Downloads"), nil
+}
+
+// WriterDestination saves files through a writer the platform provides, such
+// as the Android storage picker or the iOS Files export. The core stays free of
+// UI code: the application supplies Open, which asks the user where to save.
+type WriterDestination struct {
+	// Open returns a writer for a new file called name. It must not overwrite
+	// an existing file. Returning an error cancels the publication.
+	Open func(name string) (io.WriteCloser, error)
+}
+
+// Publish implements Destination. It opens the staged file first, so a missing
+// file never reaches the user with a save prompt.
+func (d WriterDestination) Publish(stagedPath, name string) (string, error) {
+	src, err := os.Open(stagedPath) //nolint:gosec // G304: stagedPath is created by the receiver in its own staging directory.
+	if err != nil {
+		return "", fmt.Errorf("open staged file: %w", err)
+	}
+	defer func() { _ = src.Close() }()
+
+	dst, err := d.Open(name)
+	if err != nil {
+		return "", err
+	}
+	if _, err := io.Copy(dst, src); err != nil {
+		_ = dst.Close()
+		return "", fmt.Errorf("write %s: %w", name, err)
+	}
+	if err := dst.Close(); err != nil {
+		return "", fmt.Errorf("finish %s: %w", name, err)
+	}
+	return name, nil
 }
