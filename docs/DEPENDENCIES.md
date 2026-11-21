@@ -6,7 +6,7 @@ Task 067. Generated with `scripts/dependency-report.sh` and reviewed by hand. Th
 
 | Module | Version | License | Note |
 |---|---|---|---|
-| fyne.io/fyne/v2 | v2.8.2 | BSD-3-Clause | GUI toolkit |
+| fyne.io/fyne/v2 | v2.8.2 | BSD-3-Clause | GUI toolkit for macOS, Linux, Windows and Android. Not used on iOS/iPadOS: the Fyne iOS driver draws with OpenGL ES, which shows a black screen on iOS 27.2 (see docs/MOBILE.md). |
 | fyne.io/systray | v1.12.3-0.20260810170012-af4e8e793ec4 | Apache-2.0 | System tray |
 | github.com/BurntSushi/toml | v1.6.0 | MIT | |
 | github.com/FyshOS/fancyfs | v0.0.1 | BSD-3-Clause | |

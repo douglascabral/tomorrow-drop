@@ -86,3 +86,18 @@ Tomorrow Drop appears in the share menu of other apps (`ACTION_SEND` and `ACTION
 
 Saving a received file opens the system's storage picker, which takes the app to the background. Leaving the foreground cancels the running operations (task 057), so a reception was cut before its result reached the sender: the sender reported "the connection ended before the transfer finished". While the picker is open, the cancellation is skipped (`gui.pickingFile`, `TestPickerKeepsTheReceptionRunning`). Still to check on a device: the sender waits 30 s for the result, so a person who takes longer than that in the picker makes the sender fail with a timeout. Asking for the location before the data is sent would remove that limit.
 
+## iPhone and iPad: native interface
+
+The iPhone and iPad app does not use Fyne. The Fyne iOS driver draws with OpenGL ES (GLKit), and on iOS 27.2 the app showed a black screen, also in a minimal Fyne app; with v2.8.2 it closed at launch with SIGTRAP. The iOS app is therefore native:
+
+- `cmd/tomorrow-drop-ios` is the Go core as a static library (`-buildmode=c-archive`), with no user interface. It runs the same packages as the other applications (identity, trust, discovery, transport, pairing, transfer) and exposes a small C API that returns state as JSON.
+- `ios/` is the SwiftUI app, generated with XcodeGen from `ios/project.yml`. `TomorrowDrop/Core/Core.swift` reads the state every second and sends the answers; the screens are in `TomorrowDrop/Screens/`.
+- `make install-ios` (`scripts/install-ios.sh`) builds the library for the iPhone SDK, generates the project, builds it with the team of the Apple Development certificate (automatic signing) and installs it on the connected iPhone or iPad. The app is copied to `dist/TomorrowDrop-ios-arm64.app`, with the identifier `br.com.douglascabral.tomorrowdrop`.
+
+Requirements: Xcode signed in to the Apple account, XcodeGen (`brew install xcodegen`), the device unlocked, paired and in developer mode. A profile of a free Apple account expires after 7 days; the command must be run again then.
+
+On the first launch the app asks for the local network: allow it, or discovery and pairing do not work. Received files are saved in the app's Documents, which the Files app shows (Tomorrow Drop folder).
+
+The iPhone and iPad app keeps no history: an operation in progress is listed, and its outcome is shown once, until it is closed. A received text opens at once, with a button to copy it.
+
+Not yet covered on iOS: the share sheet from other apps (no share extension), reading copied files from the clipboard (iOS does not give them to other apps), and checks on a real network. Pictures and text from the clipboard are sent.
