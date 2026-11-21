@@ -32,6 +32,9 @@ go test ./...
 echo "==> go test -race"
 go test -race ./...
 
+echo "==> install-android tests"
+scripts/install-android_test.sh
+
 echo "==> ruff"
 if [ -n "$(find . -name '*.py' -not -path './.git/*' -print -quit)" ]; then
 	command -v ruff >/dev/null 2>&1 || { echo "missing tool: ruff" >&2; exit 1; }
