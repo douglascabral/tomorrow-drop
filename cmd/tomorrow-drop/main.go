@@ -1,13 +1,21 @@
 // Command tomorrow-drop is the Tomorrow Drop graphical application.
 //
-// The Fyne interface will be integrated in task 045. Until then the binary
-// only reports that the GUI is not available yet, in the chosen language.
+// The interface is built with Fyne. Presentation rules live in internal/ui;
+// protocol, trust and transfer rules live in the shared core, which this
+// package uses but never implements.
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
+
+	"tomorrow-drop/assets"
 	"tomorrow-drop/internal/i18n"
 	"tomorrow-drop/internal/settings"
 )
@@ -23,6 +31,44 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	fmt.Fprintln(os.Stderr, tr.T("gui.indisponivel"))
-	os.Exit(1)
+
+	a := app.NewWithID("org.tomorrowdrop.app")
+	a.Settings().SetTheme(darkTheme{})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	g, err := newGUI(ctx, tr, defaultHome(), path)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	g.app = a
+	g.win = a.NewWindow(tr.T("app.nome"))
+	g.win.Resize(fyne.NewSize(420, 640))
+
+	// Discovery and incoming transfers follow the window: foreground means
+	// available, background means not available (PRD §17.2, §18).
+	a.Lifecycle().SetOnEnteredForeground(func() { g.setAvailable(true) })
+	a.Lifecycle().SetOnExitedForeground(func() { g.setAvailable(false) })
+
+	g.showHome()
+	g.win.ShowAndRun()
+}
+
+// defaultHome is the per-user directory for identity, trust and staging files.
+func defaultHome() string {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return filepath.Join(os.TempDir(), "tomorrow-drop")
+	}
+	return filepath.Join(dir, "tomorrow-drop")
+}
+
+// logoImage shows the two-mountains-and-sun logo at the given size.
+func logoImage(size float32) *canvas.Image {
+	res := fyne.NewStaticResource("logo.svg", assets.LogoSVG())
+	img := canvas.NewImageFromResource(res)
+	img.SetMinSize(fyne.NewSize(size, size))
+	img.FillMode = canvas.ImageFillContain
+	return img
 }
