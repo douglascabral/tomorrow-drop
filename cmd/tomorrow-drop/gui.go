@@ -70,6 +70,10 @@ type gui struct {
 	devicesList *widget.List
 	emptyHint   *fyne.Container
 	rows        []ui.DeviceRow
+	// homeList is what the home list shows: the paired devices, then the found ones
+	// (home_list.go). homeParts holds the widgets of its lines.
+	homeList  []homeItem
+	homeParts map[fyne.CanvasObject]*homeItemParts
 	// localAddrs are this device's addresses, used to drop its own answers.
 	localAddrs []netip.Addr
 	// addrs reads this device's addresses; tests replace it.
@@ -126,15 +130,16 @@ func newGUI(ctx context.Context, tr *i18n.Bundle, home, cfgPath string, save tra
 	}
 	g := &gui{
 		ctx: ctx, tr: tr, home: home, cfgPath: cfgPath,
-		id:       id,
-		store:    trust.Open(filepath.Join(home, "trust.json")),
-		reg:      discovery.NewRegistry(90*time.Second, limits.MaxDiscoveredDevices),
-		tlsPort:  defaultTLSPort,
-		discPort: discovery.DefaultPort,
-		ops:      map[int]context.CancelFunc{},
-		rowParts: map[fyne.CanvasObject]*deviceRowParts{},
-		paired:   map[netip.AddrPort]trust.Peer{},
-		addrs:    discovery.LocalAddresses,
+		id:        id,
+		store:     trust.Open(filepath.Join(home, "trust.json")),
+		reg:       discovery.NewRegistry(90*time.Second, limits.MaxDiscoveredDevices),
+		tlsPort:   defaultTLSPort,
+		discPort:  discovery.DefaultPort,
+		ops:       map[int]context.CancelFunc{},
+		rowParts:  map[fyne.CanvasObject]*deviceRowParts{},
+		homeParts: map[fyne.CanvasObject]*homeItemParts{},
+		paired:    map[netip.AddrPort]trust.Peer{},
+		addrs:     discovery.LocalAddresses,
 	}
 	recv, err := transfer.NewReceiver(transfer.ReceiverConfig{
 		Decide:      g.askOffer,

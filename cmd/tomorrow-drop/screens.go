@@ -91,13 +91,13 @@ func (g *gui) showHome() {
 	refresh.Importance = widget.LowImportance
 
 	list := widget.NewList(
-		func() int { return len(g.rows) },
-		g.newDeviceRow,
-		func(i widget.ListItemID, obj fyne.CanvasObject) { g.fillDeviceRow(obj, g.rows[i]) },
+		func() int { return len(g.homeList) },
+		g.newHomeItem,
+		g.fillHomeItem,
 	)
 	list.OnSelected = func(i widget.ListItemID) {
 		list.Unselect(i)
-		g.openDevice(g.rows[i])
+		g.openHomeItem(i)
 	}
 	g.devicesList = list
 
@@ -135,7 +135,7 @@ func (g *gui) showHome() {
 		g.compact(newLabelStyled(g.tr.T("gui.home.empty_title"), fyne.TextAlignCenter, fyne.TextStyle{Bold: true})),
 		hint,
 	)
-	if len(g.rows) > 0 {
+	if len(g.homeList) > 0 {
 		g.emptyHint.Hide()
 	}
 	middle := container.NewStack(list, container.NewBorder(container.NewPadded(g.emptyHint), nil, nil, nil))
@@ -197,12 +197,13 @@ func (g *gui) refreshDevices() {
 		}
 	}
 	g.rows = ui.DeviceRows(devices)
+	g.homeList = g.buildHomeList()
 	g.onUI(func() {
 		if g.devicesList != nil {
 			g.devicesList.Refresh()
 		}
 		if g.emptyHint != nil {
-			if len(g.rows) == 0 {
+			if len(g.homeList) == 0 {
 				g.emptyHint.Show()
 			} else {
 				g.emptyHint.Hide()
@@ -256,15 +257,20 @@ func (g *gui) fillDeviceRow(obj fyne.CanvasObject, row ui.DeviceRow) {
 
 // openDevice opens a trusted device (layout 5) or starts pairing with a new one (layout 2).
 func (g *gui) openDevice(row ui.DeviceRow) {
-	// Something another app shared waits for a device: a paired one gets it now.
-	if row.Trusted && g.sharedWaiting() {
-		g.sendShared(row.Address)
-		return
-	}
 	if row.Trusted {
-		g.showTrustedDevice(row)
-		return
+		// A paired device without a known address cannot be reached from here.
+		if row.Address == "" {
+			g.notify(g.tr.T("gui.home.trusted"), g.tr.T("gui.home.no_address_hint"))
+			return
+		}
+		// Something another app shared waits for a device: a paired one gets it now.
+		if g.sharedWaiting() {
+			g.sendShared(row.Address)
+			return
+		}
 	}
+	// Connecting first proves the device is still paired, and then shows its
+	// actions (send, receive). A discovered device goes to pairing the same way.
 	g.connectTo(row, false)
 }
 

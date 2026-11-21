@@ -121,6 +121,8 @@
   "gui.trusted.remove": "Unpair",
   "gui.trusted.title": "Paired devices",
   "ui.status.discovered": "Tap to pair",
+  "ui.status.no_address": "No known address",
+  "gui.home.no_address_hint": "This device has no known address yet. Connect to it by IP once to use it from here.",
   "ui.status.trusted": "Paired",
   "gui.device.fingerprint": "Device fingerprint (SHA-256)",
   "gui.device.paired_at": "Paired on %s",

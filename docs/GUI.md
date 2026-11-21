@@ -12,7 +12,7 @@ Tasks 045 to 054 (block 06). Implementation in `cmd/tomorrow-drop` (Fyne screens
 
 | Screen | Content |
 |---|---|
-| Home | This device's IPv4 address(es), so two open devices can be told apart by sight; discovered devices (trusted first, paired ones marked with a check icon; this device is never listed); Refresh; manual connection by IP:port; Settings. Send and receive are offered on the device screen, after a device is chosen |
+| Home | This device's IPv4 address(es), so two open devices can be told apart by sight; a **Paired devices** section (from the trust store, with the last address each one answered at, `home_list.go`); a **Devices found** section, without the paired ones; Refresh; manual connection by IP and port (the port is filled in); Settings. Tapping a paired device connects to it and opens its actions (send, receive); a device with no known address says so |
 | Device | Send to this device, or Pair with it |
 | Send | Destination (name or IP:port); add files and send them; text; send the clipboard after a preview; progress bar and Cancel |
 | Pairing (dialog) | Both complete fingerprints, instructions, Confirm or Cancel, then a name for the device |
@@ -56,6 +56,7 @@ Screens.
 - Result: the header is neutral ("Transfer"); "Open folder" is only on desktop.
 - Manual connection: Enter connects; the card keeps its natural height.
 - A device paired by IP:port stays in the device list for the rest of the session, even when it is on another network and does not announce itself (`TestDeviceConnectedByAddressStaysListedDuringTheSession`).
+- Paired devices are listed in their own section on the home screen, also after a restart, and never twice (`TestHomeListsPairedDevicesInTheirOwnSection`, `TestPairedDeviceIsNotRepeatedAmongFoundDevices`). Tapping one opens its actions (`TestTappingAPairedDeviceOpensItsActions`).
 - Settings: languages are named for people (Automatic, Português (Brasil), English).
 - Fingerprints are shown in four lines of four groups, so they can be compared piece by piece.
 - This device's fingerprint is one tap away, right below the address: a "View my fingerprint" button on the home screen and on the screen of a paired device. It opens the whole fingerprint in four lines, with a button to copy it. No screen shows only the start of it, so nobody is tempted to compare just the beginning (`TestHomeOffersThisDevicesFingerprintBelowItsAddress`, `TestPairedDeviceScreenOffersThisDevicesFingerprintBelowTheAddress`, `TestFingerprintViewShowsTheWholeFingerprint`). The card at the end of the device screen is the other device's fingerprint.
