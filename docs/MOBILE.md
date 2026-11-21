@@ -17,16 +17,18 @@ Tasks 055 to 061 (block 07). This document records the requirements and what was
 - The official Fyne tool (v1.7.4) hard-codes `IPHONEOS_DEPLOYMENT_TARGET = 13.0` in its Xcode project template, and Xcode 27.2 rejects it (the minimum it accepts is 15.0). The build used a local copy of the tool with that one value changed to 15.0. This is a deviation from the official tool; it must go away once the official tool is updated or the project template is overridden.
 - To install on a device, the bundle needs a provisioning profile for `org.tomorrowdrop.app` that includes the device UDID, and the signing identity must match the team. Those depend on the developer account and must be set by the owner of the account.
 
-## 055 — Build requirements (to confirm on a machine with the SDKs)
+## 055 — Build requirements
 
 | | Android | iOS/iPadOS |
 |---|---|---|
 | Toolchain | Android SDK and NDK; Java; the Fyne packaging tool | Full Xcode (not only the command-line tools); macOS |
 | Signing | Keystore for release builds | Apple Developer account, certificate and provisioning profile (`--profile`, `--certificate`) |
-| Local network | `INTERNET`; multicast needs a `WifiManager.MulticastLock` to receive UDP broadcast on some devices | Local Network permission: `NSLocalNetworkUsageDescription` must explain the use |
-| Storage | Scoped storage; saving to Downloads through the system save dialog | The Files app through the system export mechanism |
+| Local network | `INTERNET` (in the generated manifest). Discovery uses UDP broadcast, which does not need a multicast lock; confirm on device | `NSLocalNetworkUsageDescription` (present in the bundle since the patch in `scripts/fyne-tools/`). Without it iOS blocks discovery and pairing |
+| Storage | Scoped storage; the system save dialog (`WRITE_EXTERNAL_STORAGE` and `READ_EXTERNAL_STORAGE` are in the generated manifest but the save dialog does not need them) | The Files app through the system export dialog |
 
-The packaging metadata is in `FyneApp.toml`. Permissions must be added to the generated manifests and verified on device.
+The packaging metadata is in `FyneApp.toml`. The Fyne tool only supports the microphone usage key there, so the iOS local-network key comes from a patch to the tool. Build the patched tool with `scripts/fyne-tools/build.sh`; it applies `scripts/fyne-tools/ios-deployment-and-local-network.patch` to `fyne.io/tools v1.7.4` and writes `build/tools/fyne-ios15`. The patch also sets the iOS deployment target to 15.0, which current Xcode requires.
+
+The local-network prompt text is English only: iOS shows it in the system language, and translating it needs a localized `InfoPlist.strings` resource that the tool does not yet produce.
 
 ## 056 and 057 — Lifecycle (verified in tests, not on device)
 
@@ -36,11 +38,19 @@ The packaging metadata is in `FyneApp.toml`. Permissions must be added to the ge
 
 ## 058 — Files
 
-The core already separates the saving step behind `transfer.Destination`. The Android and iOS implementations (native save dialogs and storage APIs) are not written yet, so receiving on mobile still uses the desktop destination. This is a gap that must be closed before mobile receiving can be considered working.
+On phones each received file is saved through the platform's save dialog: `transfer.WriterDestination` (core, tested) asks the application for a writer, and `cmd/tomorrow-drop/save.go` opens `dialog.NewFileSave`, which is the Android storage picker or the iOS Files export.
+
+Deviations from the task text:
+- Android does not write straight into Downloads. Writing there needs MediaStore on Android 10 and later; the storage picker keeps the person in control of the location. The user chooses one place per file, so a batch asks once per file.
+- The save dialog creates new files and does not check for an existing name on every platform; the destination never overwrites a file it did not create in this run.
+
+Still to verify on device (task 061): the picker appears after accepting an offer, the file is written completely, and cancelling the picker does not leave a partial file.
+
+A regression test (`TestReceiveDestinationUsesPlatformSaveOnPhones`) covers the old fault, where phones saved into `~/Downloads`, which does not exist there.
 
 ## 059 — Clipboard
 
-The clipboard is read only after the person presses "Send clipboard", with the same preview as on desktop. Fyne's clipboard API exposes text only; images are not supported on any platform yet.
+The clipboard is read only after the person presses "Send clipboard", with the same preview as on desktop. Fyne's clipboard API exposes text only, so text and links work and images do not, on any platform. Reading images would need native code per platform; task 059 stays open until that decision is made.
 
 ## 060 — Touch and screen sizes
 

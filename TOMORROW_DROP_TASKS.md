@@ -77,9 +77,9 @@
 
 ## 07 — Android and iOS/iPadOS
 
-[   ] 055. Prepare Fyne builds for Android and iOS/iPadOS, identifying toolchain, signing and minimum local-network permission requirements.
-[   ] 056. Integrate UDP discovery and TLS with foreground/background events on Android and iOS; do not create a background transfer service.
-[   ] 057. Implement interruption of discovery, pairing and transfers when entering the background or locking the screen, with resource cleanup and a fresh start.
+[x] 055. Prepare Fyne builds for Android and iOS/iPadOS, identifying toolchain, signing and minimum local-network permission requirements.
+[x] 056. Integrate UDP discovery and TLS with foreground/background events on Android and iOS; do not create a background transfer service.
+[x] 057. Implement interruption of discovery, pairing and transfers when entering the background or locking the screen, with resource cleanup and a fresh start.
 [   ] 058. Integrate file selection and saving through native mechanisms: Downloads where feasible on Android, and a location accessible through the Files app/export on iOS.
 [   ] 059. Integrate manual clipboard reading on mobile, without monitoring and without camera permission; validate real support for text, links and images.
 [   ] 060. Adapt Fyne screens for touch, different screen sizes, accessibility and orientation.
