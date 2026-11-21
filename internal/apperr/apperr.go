@@ -7,6 +7,8 @@ package apperr
 import (
 	"context"
 	"errors"
+	"io"
+	"io/fs"
 )
 
 var (
@@ -24,6 +26,9 @@ var (
 	ErrDeclined        = errors.New("transfer declined")
 	ErrIntegrity       = errors.New("integrity check failed")
 	ErrBusy            = errors.New("receiver busy")
+	// ErrNoOffer means a connection ended before any transfer started. It is not
+	// a failed transfer, so interfaces do not report it.
+	ErrNoOffer = errors.New("no transfer offer received")
 )
 
 // keys maps each sentinel to its translation key (see internal/i18n/locales).
@@ -45,6 +50,12 @@ var keys = []struct {
 	{ErrDeclined, "error.declined"},
 	{ErrIntegrity, "error.integrity"},
 	{ErrBusy, "error.busy"},
+	{ErrNoOffer, "error.no_offer"},
+	// Standard errors that mean a broken connection or a folder that cannot be
+	// written. They are named so the person knows what to check.
+	{io.ErrUnexpectedEOF, "error.connection_lost"},
+	{io.EOF, "error.connection_lost"},
+	{fs.ErrPermission, "error.permission"},
 }
 
 // MessageKey returns the translation key for err, so interfaces can show a

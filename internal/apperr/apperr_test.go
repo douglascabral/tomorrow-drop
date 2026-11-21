@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"io/fs"
 	"testing"
 )
 
@@ -68,5 +70,19 @@ func TestMessageKeyUnknownAndNil(t *testing.T) {
 	}
 	if got := MessageKey(nil); got != "" {
 		t.Fatalf("MessageKey(nil) = %q, want empty", got)
+	}
+}
+
+// Regression: a broken connection or a folder that cannot be written showed
+// "An unexpected error occurred". They now have their own messages.
+func TestMessageKeyNamesConnectionAndPermissionProblems(t *testing.T) {
+	cases := map[string]error{
+		"error.connection_lost": fmt.Errorf("read frame: %w", io.ErrUnexpectedEOF),
+		"error.permission":      fmt.Errorf("create file: %w", fs.ErrPermission),
+	}
+	for want, err := range cases {
+		if got := MessageKey(err); got != want {
+			t.Errorf("MessageKey(%v) = %q, want %q", err, got, want)
+		}
 	}
 }

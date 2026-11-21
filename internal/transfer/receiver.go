@@ -117,7 +117,11 @@ func (r *Receiver) Serve(ctx context.Context, s *transport.Session) (Result, err
 	m := NewMachine()
 	msg, err := s.ReceiveWithin(r.idleTimeout)
 	if err != nil {
-		return Result{}, contextOr(ctx, err)
+		if ctx.Err() != nil {
+			return Result{}, contextOr(ctx, err)
+		}
+		// Nothing was offered, so no transfer failed (see ErrNoOffer).
+		return Result{}, fmt.Errorf("connection ended before an offer: %w", apperr.ErrNoOffer)
 	}
 	if msg.Type != protocol.MsgTransferOffer {
 		return Result{}, fmt.Errorf("received %s instead of an offer: %w", msg.Type, apperr.ErrMalformed)
