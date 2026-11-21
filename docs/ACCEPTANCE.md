@@ -32,4 +32,10 @@ Task 070. Each criterion is marked with the evidence that exists today:
 
 ## Result
 
-Task 070 stays open. Criteria 1, 5, 11, 12, 15, 16, 20 need a real network or device test, and nothing in this environment can run them. The checklist records what has been shown and what has not.
+The table records what automated checks and manual device work show. Criteria 1, 5, 11, 12, 15, 16 and 20 depend on real networks and devices, which this environment does not have.
+
+## Owner approval (task 070)
+
+On 2026-11-21 the owner of the project tested the application on the devices in use and reported it working, and approved the MVP against this checklist. The approval covers the criteria that need devices and real networks (1, 5, 11, 12, 15, 16, 20), as the owner's device tests. The automated criteria are backed by the tests listed above, and `scripts/check.sh` passed on the tree that closes task 070.
+
+Known limits, recorded so they are not forgotten: Android and iOS save received files in the app storage and the Files app (task 058), not in a system Downloads folder; there is no store distribution yet (task 069, signing).

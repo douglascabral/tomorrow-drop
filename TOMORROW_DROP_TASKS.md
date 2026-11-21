@@ -94,5 +94,5 @@
 [x] 066. Run performance and stability tests for large files, slow connections, network failures and many devices on one VLAN.
 [x] 067. Review dependencies, licenses and the build chain; generate a dependency list and reproducible build instructions.
 [x] 068. Document installation, secure pairing, manual connection, the 30-second behavior, clipboard, Downloads, lifecycle and application limits.
-[   ] 069. Prepare packaging and distribution for Linux, Windows, macOS, Android and iOS/iPadOS, including signing when required.
-[   ] 070. Run the final PRD v1.9 checklist and record evidence of approval for all MVP acceptance criteria.
+[x] 069. Prepare packaging and distribution for Linux, Windows, macOS, Android and iOS/iPadOS, including signing when required.
+[x] 070. Run the final PRD v1.9 checklist and record evidence of approval for all MVP acceptance criteria.
