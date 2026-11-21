@@ -1,5 +1,5 @@
-# Recursos visuais
+# Visual resources
 
-Esta pasta guarda os recursos visuais do Tomorrow Drop: logotipo (duas montanhas e um sol, PRD §19.2), ícones e imagens da interface.
+This folder holds the Tomorrow Drop visual resources: the logo (two mountains and a sun, PRD §19.2), icons and interface images.
 
-Os arquivos serão adicionados na tarefa 045.
+Files will be added in task 045.

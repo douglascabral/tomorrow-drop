@@ -1,35 +1,36 @@
-# Padrões do núcleo
+# Core standards
 
-Padrões comuns a todos os pacotes de `internal/`. Estes pontos foram definidos na tarefa 004.
+Standards shared by all packages in `internal/`. These points were defined in task 004.
 
-## Erros
+## Errors
 
-- Erros sentinela ficam em `internal/apperr`.
-- Envolva com contexto usando `fmt.Errorf("operação: %w", err)`.
-- Verifique com `errors.Is`, nunca comparando strings.
-- Mensagens não incluem conteúdo transferido, chaves, textos da área de transferência ou caminhos completos.
-- Erros de `context` devem passar por `apperr.FromContext` antes de sair de uma operação.
+- Sentinel errors live in `internal/apperr`.
+- Wrap with context using `fmt.Errorf("operation: %w", err)`.
+- Check with `errors.Is`, never by comparing strings.
+- Messages do not include transferred content, keys, clipboard text or full paths.
+- `context` errors must go through `apperr.FromContext` before leaving an operation.
+- Errors shown to people are translated: call `apperr.MessageKey(err)` and pass the key to the translator (`Bundle.T`). The internal English text is for logs and tests only. Each sentinel has a key `error.*` in every locale file; unknown errors use `error.unknown`.
 
 ## Logging
 
-- Use `log/slog` pelo construtor `safelog.New`, que redige automaticamente os campos sensíveis.
-- Campos sensíveis são identificados pelo nome: `private`, `secret`, `token`, `password`, `key`, `content`, `clipboard`, `payload`, `filename` e `path`. Valores `[]byte` também são redigidos.
-- Nomes de campos não sensíveis, como `device`, `fingerprint` e `context`, são preservados.
-- Nunca registre a chave privada, mesmo truncada.
+- Use `log/slog` through the `safelog.New` constructor, which automatically redacts sensitive fields.
+- Sensitive fields are identified by name: `private`, `secret`, `token`, `password`, `key`, `content`, `clipboard`, `payload`, `filename` and `path`. `[]byte` values are also redacted.
+- Non-sensitive field names, such as `device`, `fingerprint` and `context`, are preserved.
+- Never log the private key, not even truncated.
 
-## Cancelamento
+## Cancellation
 
-- Toda operação bloqueante recebe `context.Context` como primeiro parâmetro.
-- Operações de rede e de I/O longo verificam o contexto a cada passo.
-- Fechar o aplicativo cancela o contexto raiz (PRD §17.3).
+- Every blocking operation takes `context.Context` as its first parameter.
+- Network and long I/O operations check the context at each step.
+- Closing the application cancels the root context (PRD §17.3).
 
-## Limites de recursos
+## Resource limits
 
-- Todos os limites ficam em `internal/limits`. Não existem números mágicos de tamanho ou quantidade espalhados pelo código.
-- Tamanhos vindos da rede são validados **antes** de qualquer alocação.
+- All limits live in `internal/limits`. There are no magic size or count numbers scattered through the code.
+- Sizes coming from the network are validated **before** any allocation.
 
-## Testes
+## Tests
 
-- Escreva o teste primeiro e confirme que ele falha (TDD, AGENTS.md).
-- Bugs exigem teste de regressão que reproduza o problema antes da correção, mantido permanentemente.
-- Não use `skip`, mocks artificiais nem alterações de asserções para esconder falhas.
+- Write the test first and confirm it fails (TDD, AGENTS.md).
+- Bugs require a regression test that reproduces the problem before the fix, kept permanently.
+- Do not use `skip`, artificial mocks or assertion changes to hide failures.

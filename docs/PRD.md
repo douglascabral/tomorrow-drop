@@ -1,71 +1,71 @@
 # Tomorrow Drop
 ## Product Requirements Document (PRD)
 
-**Versão:** 1.9  
-**Status:** Aprovado para implementação  
-**Slogan:** *Transferiu. Usou. Pronto.*  
-**Licença:** MIT  
-**Linguagem:** Go  
-**Interface gráfica:** Fyne  
-**Plataformas:** Linux, Windows, macOS, Android e iOS/iPadOS
+**Version:** 1.9  
+**Status:** Approved for implementation  
+**Slogan:** *Transferiu. Usou. Pronto.* (Portuguese brand slogan; roughly "Transferred. Used. Done.")  
+**License:** MIT  
+**Language:** Go  
+**Graphical interface:** Fyne  
+**Platforms:** Linux, Windows, macOS, Android and iOS/iPadOS
 
 ---
 
-# 1. Visão geral
+# 1. Overview
 
-Tomorrow Drop é um aplicativo livre, minimalista e multiplataforma para transferência direta de arquivos, textos, links, imagens e conteúdo da área de transferência entre dispositivos conectados à mesma rede local.
+Tomorrow Drop is a free, minimalist, cross-platform application for direct transfer of files, texts, links, images and clipboard content between devices connected to the same local network.
 
-O aplicativo não depende de contas, serviços em nuvem, servidores centrais ou conexão com a internet.
+The application does not depend on accounts, cloud services, central servers or an internet connection.
 
-O fluxo principal é simples:
+The main flow is simple:
 
-1. Abrir o Tomorrow Drop.
-2. Encontrar outro dispositivo na rede local.
-3. Realizar o pareamento seguro, caso ainda não exista confiança.
-4. Escolher o conteúdo.
-5. Enviar.
-6. O destinatário aceita ou recusa.
-7. A transferência é concluída.
+1. Open Tomorrow Drop.
+2. Find another device on the local network.
+3. Perform secure pairing, if trust does not exist yet.
+4. Choose the content.
+5. Send.
+6. The recipient accepts or declines.
+7. The transfer is completed.
 
-**Princípio do produto:** Transferiu. Usou. Pronto.
+**Product principle:** Transferiu. Usou. Pronto.
 
-# 2. Objetivos
+# 2. Goals
 
-O Tomorrow Drop deverá:
+Tomorrow Drop shall:
 
-- Permitir transferências diretas entre computadores e dispositivos móveis.
-- Funcionar sem infraestrutura externa.
-- Utilizar criptografia e autenticação de identidade.
-- Manter uma interface visual simples e consistente.
-- Minimizar permissões do sistema operacional.
-- Reduzir dependências externas.
-- Evitar processos residentes desnecessários.
-- Operar em redes domésticas e empresariais.
-- Oferecer uma CLI para automação e ambientes sem interface gráfica.
-- Respeitar a privacidade do usuário.
+- Allow direct transfers between computers and mobile devices.
+- Work without external infrastructure.
+- Use cryptography and identity authentication.
+- Keep a simple and consistent visual interface.
+- Minimize operating system permissions.
+- Reduce external dependencies.
+- Avoid unnecessary resident processes.
+- Operate on home and enterprise networks.
+- Offer a CLI for automation and environments without a graphical interface.
+- Respect user privacy.
 
-## 2.1 Fora do escopo
+## 2.1 Out of scope
 
-Não serão implementados no MVP:
+The following will not be implemented in the MVP:
 
-- Contas de usuário.
-- Sincronização em nuvem.
-- Servidores de relay.
-- Transferências pela internet.
-- Histórico persistente de transferências.
-- Sincronização automática do clipboard.
-- Retomada de transferências interrompidas.
+- User accounts.
+- Cloud synchronization.
+- Relay servers.
+- Transfers over the internet.
+- Persistent transfer history.
+- Automatic clipboard synchronization.
+- Resuming interrupted transfers.
 - QR Code.
-- Pareamento por câmera.
-- Serviços de transferência em segundo plano no mobile.
-- Descoberta automática entre VLANs diferentes.
-- Atualização automática de chaves de identidade.
+- Pairing by camera.
+- Background transfer services on mobile.
+- Automatic discovery across different VLANs.
+- Automatic update of identity keys.
 
-# 3. Plataformas e tecnologias
+# 3. Platforms and technologies
 
-## 3.1 Sistemas operacionais
+## 3.1 Operating systems
 
-O aplicativo terá suporte a:
+The application will support:
 
 - Linux.
 - Windows.
@@ -73,19 +73,19 @@ O aplicativo terá suporte a:
 - Android.
 - iOS/iPadOS.
 
-## 3.2 Linguagem e interface
+## 3.2 Language and interface
 
-**Go** será a linguagem principal.
+**Go** will be the main language.
 
-**Fyne** será utilizado para a interface gráfica multiplataforma.
+**Fyne** will be used for the cross-platform graphical interface.
 
-A interface de linha de comando, denominada `tdrop`, também será implementada em Go.
+The command-line interface, named `tdrop`, will also be implemented in Go.
 
-O núcleo do aplicativo deverá ser compartilhado entre a GUI e a CLI.
+The application core shall be shared between the GUI and the CLI.
 
-## 3.3 Bibliotecas nativas
+## 3.3 Native libraries
 
-Sempre que possível, utilizar a biblioteca padrão de Go:
+Whenever possible, use the Go standard library:
 
 - `crypto/tls`
 - `crypto/ed25519`
@@ -97,649 +97,649 @@ Sempre que possível, utilizar a biblioteca padrão de Go:
 - `io`
 - `os`
 
-Dependências externas serão utilizadas apenas quando necessárias e deverão ser avaliadas quanto a manutenção, segurança e compatibilidade com a licença MIT.
+External dependencies will be used only when necessary and shall be evaluated for maintenance, security and compatibility with the MIT license.
 
-# 4. Arquitetura
+# 4. Architecture
 
-O Tomorrow Drop terá uma arquitetura modular.
+Tomorrow Drop will have a modular architecture.
 
-## 4.1 Núcleo compartilhado
+## 4.1 Shared core
 
-O núcleo será responsável por:
+The core will be responsible for:
 
-1. Identidade criptográfica.
-2. Descoberta UDP.
-3. Conexões TCP/TLS.
-4. Pareamento.
-5. Armazenamento de confiança.
-6. Protocolo de transferência.
-7. Gerenciamento de sessões.
-8. Controle do ciclo de vida.
-9. Tratamento de erros.
-10. Limpeza de recursos.
+1. Cryptographic identity.
+2. UDP discovery.
+3. TCP/TLS connections.
+4. Pairing.
+5. Trust storage.
+6. Transfer protocol.
+7. Session management.
+8. Lifecycle control.
+9. Error handling.
+10. Resource cleanup.
 
 ## 4.2 Interfaces
 
-A GUI Fyne e a CLI utilizarão o mesmo núcleo.
+The Fyne GUI and the CLI will use the same core.
 
-As regras de autenticação, transferência e segurança não poderão divergir entre as interfaces.
+The authentication, transfer and security rules must not diverge between the interfaces.
 
-## 4.3 Comunicação
+## 4.3 Communication
 
-A comunicação será direta entre dispositivos.
+Communication will be direct between devices.
 
-Não haverá servidor central, conta, nuvem, relay ou dependência obrigatória de serviços externos.
+There will be no central server, account, cloud, relay or mandatory dependency on external services.
 
-# 5. Descoberta de dispositivos
+# 5. Device discovery
 
-## 5.1 Protocolo
+## 5.1 Protocol
 
-A descoberta utilizará UDP broadcast na rede local.
+Discovery will use UDP broadcast on the local network.
 
-O protocolo terá dois tipos lógicos de mensagens:
+The protocol will have two logical message types:
 
 **DISCOVER**
 
-Solicita informações sobre dispositivos disponíveis.
+Requests information about available devices.
 
 **ANNOUNCE**
 
-Responde à solicitação de descoberta, preferencialmente por UDP unicast ao solicitante.
+Responds to the discovery request, preferably by UDP unicast to the requester.
 
-Não haverá necessidade de anúncios periódicos de presença enviados por todos os dispositivos.
+There is no need for periodic presence announcements sent by every device.
 
-## 5.2 Intervalo de descoberta
+## 5.2 Discovery interval
 
-**Intervalo aprovado: 30 segundos.**
+**Approved interval: 30 seconds.**
 
-| Evento | Comportamento |
+| Event | Behavior |
 |---|---|
-| Aplicativo aberto | Enviar DISCOVER imediatamente |
-| Aplicativo visível e disponível | Enviar DISCOVER a cada 30 segundos |
-| Usuário clica em Atualizar | Enviar DISCOVER imediatamente |
-| Retorno ao primeiro plano | Enviar DISCOVER imediatamente |
-| Desktop minimizado | Suspender descoberta |
-| Mobile em segundo plano | Suspender descoberta |
-| Transferência em andamento | Suspender consultas periódicas |
-| Aplicativo encerrado | Nenhuma atividade de descoberta |
+| Application opened | Send DISCOVER immediately |
+| Application visible and available | Send DISCOVER every 30 seconds |
+| User clicks Refresh | Send DISCOVER immediately |
+| Return to foreground | Send DISCOVER immediately |
+| Desktop minimized | Suspend discovery |
+| Mobile in background | Suspend discovery |
+| Transfer in progress | Suspend periodic queries |
+| Application closed | No discovery activity |
 
-Ao clicar em Atualizar, o contador de 30 segundos será reiniciado.
+When Refresh is clicked, the 30-second counter is restarted.
 
-Cliques repetidos serão limitados para evitar consultas excessivas.
+Repeated clicks will be rate-limited to avoid excessive queries.
 
-## 5.3 Respostas
+## 5.3 Responses
 
-Os dispositivos disponíveis deverão responder às consultas recebidas, respeitando:
+Available devices shall respond to incoming queries, respecting:
 
-- Limitação de frequência.
-- Pequeno atraso aleatório para distribuir respostas.
-- Tamanho máximo de mensagens.
-- Validação do formato.
-- Rejeição de mensagens malformadas.
+- Rate limiting.
+- A small random delay to spread responses.
+- Maximum message size.
+- Format validation.
+- Rejection of malformed messages.
 
-A implementação deverá evitar amplificação desnecessária de tráfego UDP.
+The implementation shall avoid unnecessary UDP traffic amplification.
 
-## 5.4 Redes empresariais
+## 5.4 Enterprise networks
 
-A descoberta deverá respeitar o domínio local de broadcast.
+Discovery shall respect the local broadcast domain.
 
-O aplicativo não tentará atravessar VLANs, contornar firewalls ou burlar isolamento de clientes.
+The application will not attempt to cross VLANs, bypass firewalls or circumvent client isolation.
 
-Redes empresariais podem impedir a descoberta ou a comunicação direta entre dispositivos.
+Enterprise networks may prevent discovery or direct communication between devices.
 
-Nessas situações, será disponibilizada a conexão manual.
+In these situations, manual connection will be available.
 
-## 5.5 Conexão manual
+## 5.5 Manual connection
 
-O usuário poderá informar:
+The user may provide:
 
-- Endereço IP.
-- Porta TCP.
+- IP address.
+- TCP port.
 
-A conexão manual estará sujeita às mesmas verificações criptográficas da descoberta automática.
+Manual connection is subject to the same cryptographic checks as automatic discovery.
 
-O endereço IP não será utilizado como identidade confiável.
+The IP address will not be used as a trusted identity.
 
-## 5.6 Segurança da descoberta
+## 5.6 Discovery security
 
-Anúncios UDP serão considerados não confiáveis.
+UDP announcements are considered untrusted.
 
-Nenhuma informação de descoberta será suficiente para autorizar uma transferência.
+No discovery information is sufficient to authorize a transfer.
 
-O dispositivo deverá ser autenticado pela identidade criptográfica antes de receber confiança.
+The device must be authenticated by its cryptographic identity before it receives trust.
 
-# 6. Identidade criptográfica
+# 6. Cryptographic identity
 
-Cada instalação terá um par de chaves Ed25519 persistente.
+Each installation will have a persistent Ed25519 key pair.
 
-A chave pública identificará criptograficamente o dispositivo.
+The public key will cryptographically identify the device.
 
-A chave privada deverá permanecer local e ser protegida pelos mecanismos adequados de cada plataforma.
+The private key must remain local and be protected by the appropriate mechanisms of each platform.
 
-A identidade não dependerá de:
+Identity does not depend on:
 
-- Nome do dispositivo.
-- Endereço IP.
-- Endereço MAC.
-- Interface de rede.
-- Nome de usuário do sistema.
+- Device name.
+- IP address.
+- MAC address.
+- Network interface.
+- Operating system user name.
 
-Uma reinstalação que gere uma nova chave será tratada como uma nova identidade.
+A reinstallation that generates a new key will be treated as a new identity.
 
 # 7. Fingerprint
 
-O fingerprint será calculado sobre a representação canônica de 32 bytes da chave pública Ed25519.
+The fingerprint will be computed over the canonical 32-byte representation of the Ed25519 public key.
 
-**Algoritmo:**
+**Algorithm:**
 
-`SHA-256(chave pública Ed25519 canônica)`
+`SHA-256(canonical Ed25519 public key)`
 
-O resultado terá 32 bytes, apresentados como 64 caracteres hexadecimais.
+The result has 32 bytes, presented as 64 hexadecimal characters.
 
-A interface deverá:
+The interface shall:
 
-- Exibir o fingerprint completo.
-- Agrupar os caracteres para facilitar a leitura.
-- Identificar claramente a qual dispositivo pertence cada fingerprint.
-- Evitar truncamento.
-- Permitir conferência visual.
+- Display the complete fingerprint.
+- Group the characters for readability.
+- Clearly identify which device each fingerprint belongs to.
+- Avoid truncation.
+- Allow visual comparison.
 
-Não serão utilizados códigos curtos como substitutos da verificação completa.
+Short codes shall not be used as substitutes for the complete verification.
 
-# 8. Transporte seguro
+# 8. Secure transport
 
-As conexões de transferência utilizarão **TLS 1.3**.
+Transfer connections will use **TLS 1.3**.
 
-A implementação deverá garantir:
+The implementation must guarantee:
 
-- Criptografia do tráfego.
-- Integridade das mensagens.
-- Autenticação da identidade criptográfica.
-- Verificação de posse da chave privada.
-- Associação entre a identidade Ed25519 e a credencial apresentada no TLS.
-- Verificação da chave pública previamente confiável em reconexões.
+- Traffic encryption.
+- Message integrity.
+- Authentication of the cryptographic identity.
+- Verification of possession of the private key.
+- Binding between the Ed25519 identity and the credential presented in TLS.
+- Verification of the previously trusted public key on reconnections.
 
-## 8.1 Conexão provisória
+## 8.1 Provisional connection
 
-No primeiro contato, uma conexão TLS poderá ser estabelecida antes da autenticação fora de banda.
+On first contact, a TLS connection may be established before out-of-band authentication.
 
-Essa conexão será considerada provisória.
+This connection is considered provisional.
 
-Embora criptografada, ela não será considerada autenticada até a confirmação do pareamento.
+Although encrypted, it is not considered authenticated until pairing is confirmed.
 
-Nenhuma transferência de conteúdo será autorizada nesse estado.
+No content transfer is authorized in this state.
 
-## 8.2 Reconexões
+## 8.2 Reconnections
 
-Dispositivos já pareados deverão ser autenticados mediante comparação com a chave pública persistida.
+Devices that are already paired must be authenticated by comparison with the persisted public key.
 
-Chaves diferentes das esperadas resultarão em bloqueio.
+Keys different from the expected ones will result in blocking.
 
-Não haverá aceitação automática de alterações de identidade.
+There will be no automatic acceptance of identity changes.
 
-# 9. Pareamento inicial
+# 9. Initial pairing
 
-O pareamento será realizado exclusivamente por **comparação manual de fingerprints completos**.
+Pairing will be performed exclusively by **manual comparison of complete fingerprints**.
 
-Não haverá QR Code, câmera, PAKE ou códigos SAS curtos.
+There will be no QR Code, camera, PAKE or short SAS codes.
 
-## 9.1 Fluxo
+## 9.1 Flow
 
-1. Dois dispositivos estabelecem uma conexão TLS provisória.
-2. Cada dispositivo identifica a chave pública apresentada pelo outro.
-3. Cada dispositivo calcula seu fingerprint local.
-4. Cada dispositivo calcula o fingerprint da identidade remota.
-5. As duas telas exibem as identidades local e remota.
-6. O usuário compara os fingerprints de forma cruzada.
-7. Cada dispositivo exige confirmação explícita.
-8. As confirmações são vinculadas à mesma sessão e às mesmas identidades.
-9. Após a confirmação mútua, as chaves públicas são armazenadas como confiáveis.
-10. A conexão passa a permitir operações autorizadas.
+1. Two devices establish a provisional TLS connection.
+2. Each device identifies the public key presented by the other.
+3. Each device computes its local fingerprint.
+4. Each device computes the fingerprint of the remote identity.
+5. Both screens display the local and remote identities.
+6. The user compares the fingerprints cross-wise.
+7. Each device requires explicit confirmation.
+8. The confirmations are bound to the same session and the same identities.
+9. After mutual confirmation, the public keys are stored as trusted.
+10. The connection then allows authorized operations.
 
-## 9.2 Comparação cruzada
+## 9.2 Cross comparison
 
-O fingerprint local do dispositivo A deverá corresponder ao fingerprint remoto exibido no dispositivo B.
+The local fingerprint of device A must match the remote fingerprint shown on device B.
 
-O fingerprint local do dispositivo B deverá corresponder ao fingerprint remoto exibido no dispositivo A.
+The local fingerprint of device B must match the remote fingerprint shown on device A.
 
-Ambas as comparações são obrigatórias.
+Both comparisons are mandatory.
 
-## 9.3 Confirmação
+## 9.3 Confirmation
 
-A interface deverá apresentar instruções claras.
+The interface must present clear instructions.
 
-A confirmação não poderá ser interpretada como automática ou implícita.
+Confirmation must not be interpreted as automatic or implicit.
 
-O protocolo deverá impedir que confirmações de sessões diferentes sejam reutilizadas.
+The protocol must prevent confirmations from different sessions from being reused.
 
-## 9.4 Persistência
+## 9.4 Persistence
 
-**Decisão aprovada:** a confiança permanecerá válida até remoção manual.
+**Approved decision:** trust remains valid until manually removed.
 
-Não haverá expiração automática por tempo ou inatividade.
+There is no automatic expiration by time or inactivity.
 
-## 9.5 Revogação
+## 9.5 Revocation
 
-O usuário poderá remover um dispositivo confiável.
+The user may remove a trusted device.
 
-Após a revogação, uma nova conexão exigirá novo pareamento.
+After revocation, a new connection requires new pairing.
 
-# 10. Estados de segurança
+# 10. Security states
 
-O aplicativo deverá distinguir:
+The application shall distinguish:
 
-**Descoberto:** dispositivo encontrado, sem autenticação.
+**Discovered:** device found, not authenticated.
 
-**Conectando:** tentativa de estabelecer conexão.
+**Connecting:** attempt to establish a connection.
 
-**Aguardando verificação:** conexão provisória, aguardando pareamento.
+**Awaiting verification:** provisional connection, waiting for pairing.
 
-**Confiável:** identidade autenticada e persistida.
+**Trusted:** identity authenticated and persisted.
 
-**Identidade alterada:** chave pública diferente da armazenada; conexão bloqueada.
+**Identity changed:** public key different from the stored one; connection blocked.
 
-**Desconectado:** sem sessão ativa.
+**Disconnected:** no active session.
 
-O aplicativo não deverá apresentar uma conexão como confiável apenas porque o TLS foi estabelecido.
+The application must not present a connection as trusted merely because TLS was established.
 
-# 11. Envio de conteúdo
+# 11. Sending content
 
-O usuário poderá enviar:
+The user may send:
 
-- Arquivos individuais.
-- Múltiplos arquivos.
-- Textos.
+- Individual files.
+- Multiple files.
+- Texts.
 - Links.
-- Conteúdo da área de transferência.
-- Imagens copiadas, quando suportadas pela plataforma.
+- Clipboard content.
+- Copied images, when supported by the platform.
 
-Toda transferência será iniciada por ação explícita do usuário.
+Every transfer will be started by an explicit user action.
 
-Não haverá envio automático de conteúdo.
+There will be no automatic sending of content.
 
-# 12. Área de transferência
+# 12. Clipboard
 
-O Tomorrow Drop permitirá o envio manual do clipboard.
+Tomorrow Drop will allow manual sending of the clipboard.
 
-## 12.1 Conteúdos
+## 12.1 Content
 
-- Texto.
+- Text.
 - Links.
-- Imagens, quando disponíveis pelas APIs da plataforma.
+- Images, when available through the platform APIs.
 
-## 12.2 Privacidade
+## 12.2 Privacy
 
-O aplicativo não deverá ler o clipboard automaticamente ao iniciar.
+The application must not read the clipboard automatically at startup.
 
-A leitura ocorrerá somente após o usuário selecionar **Enviar área de transferência**.
+Reading occurs only after the user selects **Send clipboard** (Enviar área de transferência).
 
-Antes do envio, será apresentada uma prévia do conteúdo.
+A preview of the content is shown before sending.
 
-## 12.3 Recebimento
+## 12.3 Receiving
 
-O conteúdo recebido não substituirá automaticamente o clipboard do destinatário.
+Received content will not automatically replace the recipient's clipboard.
 
-O usuário poderá copiar o texto recebido manualmente.
+The user may copy the received text manually.
 
-Não haverá sincronização contínua nem histórico persistente.
+There will be no continuous synchronization or persistent history.
 
-# 13. Autorização de recebimento
+# 13. Receive authorization
 
-**Decisão aprovada:** toda transferência exige aceitação explícita do destinatário.
+**Approved decision:** every transfer requires explicit acceptance by the recipient.
 
-Isso também se aplica a dispositivos já confiáveis.
+This also applies to already trusted devices.
 
-A solicitação deverá apresentar:
+The request must present:
 
-- Identidade autenticada do remetente.
-- Tipo de conteúdo.
-- Nome do arquivo, quando aplicável.
-- Tamanho do arquivo ou conjunto de arquivos.
-- Ações Aceitar e Recusar.
+- Authenticated identity of the sender.
+- Content type.
+- File name, when applicable.
+- File or file set size.
+- Accept and Decline actions.
 
-A recusa deverá encerrar a solicitação sem salvar o conteúdo.
+Declining must end the request without saving the content.
 
-Solicitações não respondidas terão timeout.
+Unanswered requests will time out.
 
-# 14. Destino dos arquivos
+# 14. File destination
 
-**Decisão aprovada:** Downloads será o destino padrão.
+**Approved decision:** Downloads will be the default destination.
 
 ## 14.1 Desktop
 
-Utilizar a pasta Downloads correspondente ao usuário do sistema operacional.
+Use the Downloads folder of the operating system user.
 
 ## 14.2 Android
 
-Utilizar os mecanismos apropriados de armazenamento do Android, respeitando as permissões e APIs disponíveis.
+Use the appropriate Android storage mechanisms, respecting the available permissions and APIs.
 
 ## 14.3 iOS/iPadOS
 
-Utilizar uma localização acessível pelo aplicativo Arquivos ou mecanismo nativo de exportação.
+Use a location accessible through the Files app or the native export mechanism.
 
-O aplicativo não deverá pressupor que exista uma pasta Downloads universalmente gravável como no desktop.
+The application must not assume that a universally writable Downloads folder exists, as on desktop.
 
-## 14.4 Conflitos
+## 14.4 Conflicts
 
-Arquivos existentes não poderão ser sobrescritos silenciosamente.
+Existing files must not be silently overwritten.
 
-A implementação deverá adotar uma política segura de renomeação ou solicitar uma decisão explícita ao usuário.
+The implementation shall adopt a safe renaming policy or request an explicit decision from the user.
 
-# 15. Integridade e arquivos temporários
+# 15. Integrity and temporary files
 
-Arquivos recebidos serão gravados inicialmente em armazenamento temporário.
+Received files will initially be written to temporary storage.
 
-Ao concluir, o aplicativo deverá:
+On completion, the application must:
 
-1. Verificar a conclusão do protocolo.
-2. Validar o tamanho esperado.
-3. Verificar a integridade do conteúdo conforme o mecanismo definido pelo protocolo.
-4. Disponibilizar o arquivo definitivo.
-5. Remover os dados temporários desnecessários.
+1. Verify the completion of the protocol.
+2. Validate the expected size.
+3. Verify the content integrity according to the mechanism defined by the protocol.
+4. Make the final file available.
+5. Remove unneeded temporary data.
 
-A implementação deverá detectar truncamentos e falhas de transmissão.
+The implementation must detect truncation and transmission failures.
 
-Quando suportado, a disponibilização final deverá utilizar renomeação atômica.
+When supported, the final availability must use atomic renaming.
 
-Arquivos incompletos nunca poderão ser apresentados como concluídos.
+Incomplete files must never be presented as completed.
 
-# 16. Transferências interrompidas
+# 16. Interrupted transfers
 
-**Decisão aprovada: não haverá retomada.**
+**Approved decision: there is no resume.**
 
-Uma transferência interrompida será invalidada.
+An interrupted transfer will be invalidated.
 
-Uma nova tentativa deverá começar do primeiro byte.
+A new attempt must start from the first byte.
 
-Não haverá checkpoints, armazenamento persistente de progresso ou sincronização de estado entre tentativas.
+There will be no checkpoints, persistent progress storage or state synchronization between attempts.
 
-São consideradas interrupções:
+The following are considered interruptions:
 
-- Falha de rede.
-- Cancelamento.
+- Network failure.
+- Cancellation.
 - Timeout.
-- Encerramento do aplicativo.
-- Mudança de estado incompatível com a transferência.
+- Application shutdown.
+- State change incompatible with the transfer.
 
-Arquivos parciais deverão ser removidos.
+Partial files must be removed.
 
-# 17. Ciclo de vida — Desktop
+# 17. Lifecycle — Desktop
 
-Aplica-se a Linux, Windows e macOS.
+Applies to Linux, Windows and macOS.
 
-## 17.1 Aplicativo visível
+## 17.1 Visible application
 
-Enquanto a janela estiver visível:
+While the window is visible:
 
-- A descoberta UDP poderá funcionar.
-- O listener TCP/TLS estará disponível.
-- Novas conexões poderão ser aceitas.
-- Transferências poderão ser iniciadas e recebidas.
+- UDP discovery may operate.
+- The TCP/TLS listener is available.
+- New connections may be accepted.
+- Transfers may be started and received.
 
-## 17.2 Aplicativo minimizado
+## 17.2 Minimized application
 
-Ao minimizar:
+When minimized:
 
-- Suspender consultas UDP.
-- Fechar o listener de novas conexões.
-- Não aceitar novas solicitações.
-- Manter somente transferências já autorizadas e em andamento.
-- Encerrar as conexões mantidas ao terminar, cancelar, falhar ou atingir timeout.
+- Suspend UDP queries.
+- Close the listener for new connections.
+- Do not accept new requests.
+- Keep only transfers already authorized and in progress.
+- Close the kept connections when they finish, are cancelled, fail or time out.
 
-Se não houver transferência ativa, os recursos de rede serão liberados imediatamente.
+If there is no active transfer, network resources are released immediately.
 
-## 17.3 Encerramento
+## 17.3 Shutdown
 
-Fechar explicitamente o aplicativo deverá:
+Explicitly closing the application must:
 
-- Cancelar transferências.
-- Encerrar conexões.
-- Fechar listeners.
-- Interromper descoberta.
-- Liberar recursos.
+- Cancel transfers.
+- Close connections.
+- Close listeners.
+- Stop discovery.
+- Release resources.
 
-Minimizar e encerrar são ações distintas.
+Minimizing and closing are distinct actions.
 
-# 18. Ciclo de vida — Mobile
+# 18. Lifecycle — Mobile
 
-Aplica-se a Android e iOS/iPadOS.
+Applies to Android and iOS/iPadOS.
 
-O aplicativo deverá permanecer em primeiro plano durante:
+The application must remain in the foreground during:
 
-- Descoberta.
-- Pareamento.
-- Envio.
-- Recebimento.
+- Discovery.
+- Pairing.
+- Sending.
+- Receiving.
 
-Ao entrar em segundo plano:
+When entering the background:
 
-- Interromper descoberta.
-- Fechar listeners.
-- Cancelar transferências.
-- Encerrar conexões.
-- Invalidar operações incompletas.
-- Liberar recursos de rede.
+- Stop discovery.
+- Close listeners.
+- Cancel transfers.
+- Close connections.
+- Invalidate incomplete operations.
+- Release network resources.
 
-Não haverá serviço de transferência em segundo plano no MVP.
+There will be no background transfer service in the MVP.
 
-Ao retornar ao primeiro plano, o aplicativo enviará uma nova consulta de descoberta imediatamente.
+When returning to the foreground, the application will send a new discovery query immediately.
 
-# 19. Interface gráfica
+# 19. Graphical interface
 
-## 19.1 Diretrizes
+## 19.1 Guidelines
 
-A interface deverá ser:
+The interface must be:
 
-- Minimalista.
-- Clara.
-- Consistente.
-- Responsiva.
-- Adequada a telas pequenas.
-- Livre de elementos decorativos excessivos.
-- Orientada a uma ação principal por tela.
+- Minimalist.
+- Clear.
+- Consistent.
+- Responsive.
+- Suitable for small screens.
+- Free of excessive decorative elements.
+- Oriented to one main action per screen.
 
-Informações criptográficas detalhadas serão apresentadas principalmente durante pareamento, consulta de identidade e resolução de problemas de segurança.
+Detailed cryptographic information will be presented mainly during pairing, identity inspection and security troubleshooting.
 
-## 19.2 Identidade visual
+## 19.2 Visual identity
 
-O logotipo utilizará **duas montanhas e um sol**.
+The logo will use **two mountains and a sun**.
 
-O tema escuro será a referência visual inicial.
+The dark theme is the initial visual reference.
 
-A paleta deverá privilegiar cores neutras, com acentos roxos discretos e indicadores de sucesso ou erro quando necessários.
+The palette should favor neutral colors, with discreet purple accents and success or error indicators when needed.
 
-## 19.3 Telas
+## 19.3 Screens
 
-### Início
+### Home
 
-- Enviar.
-- Receber.
-- Dispositivos encontrados.
-- Atualizar.
-- Conexão manual.
-- Configurações.
+- Send.
+- Receive.
+- Discovered devices.
+- Refresh.
+- Manual connection.
+- Settings.
 
-### Pareamento
+### Pairing
 
-- Nome do dispositivo local.
-- Nome do dispositivo remoto.
-- Fingerprints completos.
-- Instruções para comparação cruzada.
-- Confirmar.
-- Cancelar.
+- Local device name.
+- Remote device name.
+- Complete fingerprints.
+- Instructions for cross comparison.
+- Confirm.
+- Cancel.
 
-### Enviar
+### Send
 
-- Selecionar arquivos.
-- Enviar clipboard.
-- Escrever texto.
+- Select files.
+- Send clipboard.
+- Write text.
 
-### Solicitação de recebimento
+### Receive request
 
-- Dispositivo remetente.
-- Informações do conteúdo.
-- Aceitar.
-- Recusar.
+- Sending device.
+- Content information.
+- Accept.
+- Decline.
 
-### Transferência
+### Transfer
 
-- Nome do conteúdo.
-- Progresso.
-- Cancelar.
+- Content name.
+- Progress.
+- Cancel.
 
-### Conclusão
+### Completion
 
-- Confirmação.
-- Abrir conteúdo.
-- Voltar.
+- Confirmation.
+- Open content.
+- Back.
 
-### Dispositivos confiáveis
+### Trusted devices
 
-- Lista de dispositivos.
+- Device list.
 - Fingerprint.
-- Remover confiança.
+- Remove trust.
 
-### Configurações
+### Settings
 
-- Identidade local.
-- Preferências essenciais.
-- Informações do aplicativo.
+- Local identity.
+- Essential preferences.
+- Application information.
 
-Não haverá telas de QR Code.
+There will be no QR Code screens.
 
 # 20. CLI
 
-O aplicativo incluirá a CLI `tdrop`.
+The application will include the `tdrop` CLI.
 
-Comandos previstos:
+Planned commands:
 
 - `tdrop discover`
 - `tdrop identity show`
-- `tdrop pair <destino>`
+- `tdrop pair <destination>`
 - `tdrop trust list`
 - `tdrop trust remove <id>`
-- `tdrop send <arquivo> --to <destino>`
-- `tdrop send --stdin --to <destino>`
+- `tdrop send <file> --to <destination>`
+- `tdrop send --stdin --to <destination>`
 - `tdrop receive`
 - `tdrop daemon`
 
-A CLI deverá utilizar o mesmo núcleo da GUI.
+The CLI shall use the same core as the GUI.
 
-## 20.1 Recebimento pela CLI
+## 20.1 Receiving through the CLI
 
-O recebimento exigirá autorização explícita.
+Receiving requires explicit authorization.
 
-Por padrão, a autorização será interativa.
+By default, authorization is interactive.
 
-Qualquer política não interativa deverá ser configurada conscientemente pelo operador e documentada, sem enfraquecer a autenticação de identidade.
+Any non-interactive policy must be consciously configured by the operator and documented, without weakening identity authentication.
 
 ## 20.2 Daemon
 
-`tdrop daemon` permitirá operação contínua quando iniciado explicitamente.
+`tdrop daemon` allows continuous operation when explicitly started.
 
-Esse modo será uma exceção à política de disponibilidade vinculada à janela gráfica.
+This mode is an exception to the availability policy tied to the graphical window.
 
-# 21. Armazenamento local e privacidade
+# 21. Local storage and privacy
 
-O aplicativo poderá persistir:
+The application may persist:
 
-- Chave privada local.
-- Chaves públicas confiáveis.
-- Identificadores e nomes amigáveis.
-- Preferências essenciais.
+- Local private key.
+- Trusted public keys.
+- Identifiers and friendly names.
+- Essential preferences.
 
-O aplicativo não deverá persistir como histórico:
+The application must not persist as history:
 
-- Textos transferidos.
-- Conteúdo do clipboard.
-- Listas de arquivos enviados ou recebidos.
-- Chaves de sessão.
-- Progresso de transferências interrompidas.
+- Transferred texts.
+- Clipboard content.
+- Lists of sent or received files.
+- Session keys.
+- Progress of interrupted transfers.
 
-Arquivos salvos intencionalmente pelo usuário permanecerão no destino escolhido.
+Files intentionally saved by the user remain in the destination chosen by the user.
 
-Dados temporários deverão ser removidos após sua utilização ou durante a limpeza de sessões incompletas.
+Temporary data must be removed after use or during the cleanup of incomplete sessions.
 
-# 22. Modelo de ameaças
+# 22. Threat model
 
-O Tomorrow Drop deverá proteger contra:
+Tomorrow Drop must protect against:
 
-- Interceptação de tráfego.
-- Modificação de dados em trânsito.
-- Ataques MITM durante o primeiro contato, quando o usuário realiza corretamente a comparação fora de banda.
-- Falsificação de anúncios UDP.
-- Tentativas de transferência por dispositivos não autenticados.
-- Alteração inesperada de chaves públicas confiáveis.
-- Solicitações maliciosas de transferência.
-- Abuso de recursos por mensagens ou conexões não autorizadas.
+- Traffic interception.
+- Modification of data in transit.
+- MITM attacks during first contact, when the user correctly performs the out-of-band comparison.
+- UDP announcement spoofing.
+- Transfer attempts by unauthenticated devices.
+- Unexpected changes to trusted public keys.
+- Malicious transfer requests.
+- Resource abuse through unauthorized messages or connections.
 
-## 22.1 Limites de segurança
+## 22.1 Security limits
 
-O projeto não prometerá proteção contra:
+The project will not promise protection against:
 
-- Sistema operacional comprometido.
-- Roubo da chave privada.
-- Adulteração física ou lógica das telas.
-- Usuário que confirme fingerprints sem compará-los.
-- Negação de serviço na rede local.
-- Bloqueios impostos pela infraestrutura de rede.
+- A compromised operating system.
+- Theft of the private key.
+- Physical or logical tampering with the screens.
+- A user who confirms fingerprints without comparing them.
+- Denial of service on the local network.
+- Blocks imposed by network infrastructure.
 
-O estabelecimento de TLS, isoladamente, não será tratado como autenticação de identidade.
+TLS alone will not be treated as identity authentication.
 
-# 23. Plano de testes
+# 23. Test plan
 
-## 23.1 Segurança
+## 23.1 Security
 
-- Identidades Ed25519.
-- Fingerprints SHA-256.
-- Autenticação TLS.
-- Confirmação mútua.
-- Rejeição de MITM.
-- Bloqueio de identidades alteradas.
-- Revogação de confiança.
-- Rejeição de transferências não autorizadas.
+- Ed25519 identities.
+- SHA-256 fingerprints.
+- TLS authentication.
+- Mutual confirmation.
+- MITM rejection.
+- Blocking of changed identities.
+- Trust revocation.
+- Rejection of unauthorized transfers.
 
-## 23.2 Descoberta
+## 23.2 Discovery
 
-- Consulta imediata ao abrir.
-- Consulta periódica de 30 segundos.
-- Atualização manual.
-- Reinício do contador após atualização.
-- Limitação de frequência.
-- Respostas UDP unicast.
-- Suspensão durante transferência.
-- Funcionamento em redes empresariais.
-- Conexão manual por IP e porta.
+- Immediate query on open.
+- Periodic 30-second query.
+- Manual refresh.
+- Counter restart after refresh.
+- Rate limiting.
+- UDP unicast responses.
+- Suspension during transfer.
+- Operation on enterprise networks.
+- Manual connection by IP and port.
 
-## 23.3 Transferências
+## 23.3 Transfers
 
-- Arquivos pequenos e grandes.
-- Múltiplos arquivos.
-- Textos e links.
+- Small and large files.
+- Multiple files.
+- Texts and links.
 - Clipboard.
-- Aceitação e recusa.
-- Cancelamento.
-- Falhas de rede.
+- Acceptance and decline.
+- Cancellation.
+- Network failures.
 - Timeout.
-- Reinício desde o primeiro byte.
-- Integridade.
-- Limpeza de temporários.
-- Colisões de nomes.
+- Restart from the first byte.
+- Integrity.
+- Temporary file cleanup.
+- Name collisions.
 
-## 23.4 Ciclo de vida
+## 23.4 Lifecycle
 
-- Desktop visível.
-- Desktop minimizado durante transferência.
-- Desktop minimizado sem transferência.
-- Encerramento explícito.
-- Mobile em primeiro plano.
-- Mobile em segundo plano.
-- Bloqueio de tela.
-- Retorno ao aplicativo.
+- Desktop visible.
+- Desktop minimized during transfer.
+- Desktop minimized without transfer.
+- Explicit shutdown.
+- Mobile in foreground.
+- Mobile in background.
+- Screen lock.
+- Return to the application.
 
-## 23.5 Compatibilidade
+## 23.5 Compatibility
 
-Executar testes em:
+Run tests on:
 
 - Linux.
 - Windows.
@@ -747,163 +747,163 @@ Executar testes em:
 - Android.
 - iOS/iPadOS.
 
-# 24. Diretrizes técnicas aprovadas
+# 24. Approved technical guidelines
 
-Todas as decisões de produto e arquitetura estão aprovadas para implementação.
+All product and architecture decisions are approved for implementation.
 
-## 24.1 Interface multiplataforma
+## 24.1 Cross-platform interface
 
-- Go como linguagem principal.
-- Fyne como framework gráfico.
-- Núcleo compartilhado com CLI.
-- Suporte às cinco plataformas definidas.
+- Go as the main language.
+- Fyne as the graphical framework.
+- Core shared with the CLI.
+- Support for the five defined platforms.
 
-## 24.2 Segurança
+## 24.2 Security
 
 - TLS 1.3.
 - Ed25519.
 - SHA-256.
-- Fingerprints completos.
-- Pareamento manual com confirmação mútua.
-- Confiança persistente até revogação.
-- Pinning de identidade.
-- Rejeição de chaves alteradas.
+- Complete fingerprints.
+- Manual pairing with mutual confirmation.
+- Persistent trust until revocation.
+- Identity pinning.
+- Rejection of changed keys.
 
-## 24.3 Armazenamento
+## 24.3 Storage
 
-- Downloads como destino padrão, conforme os mecanismos de cada plataforma.
-- Arquivos temporários.
-- Verificação de integridade.
-- Limpeza de arquivos incompletos.
-- Sem retomada de transferências.
+- Downloads as the default destination, according to the mechanisms of each platform.
+- Temporary files.
+- Integrity verification.
+- Cleanup of incomplete files.
+- No transfer resume.
 
-## 24.4 Descoberta
+## 24.4 Discovery
 
-- UDP broadcast local.
-- Busca imediata ao abrir.
-- Busca imediata ao atualizar.
-- Intervalo periódico de 30 segundos.
-- Respostas preferencialmente por UDP unicast.
-- Limitação de frequência.
-- Atraso aleatório de resposta.
-- Conexão manual por IP e porta.
+- Local UDP broadcast.
+- Immediate search on open.
+- Immediate search on refresh.
+- Periodic interval of 30 seconds.
+- Responses preferably by UDP unicast.
+- Rate limiting.
+- Random response delay.
+- Manual connection by IP and port.
 
-## 24.5 Permissões e ciclo de vida
+## 24.5 Permissions and lifecycle
 
-- Sem QR Code.
-- Sem permissão de câmera.
-- Clipboard acessado somente por ação explícita.
-- Desktop mantém transferências autorizadas após minimizar.
-- Mobile exige primeiro plano.
-- Sem serviços residentes no mobile.
+- No QR Code.
+- No camera permission.
+- Clipboard accessed only by explicit action.
+- Desktop keeps authorized transfers after minimizing.
+- Mobile requires the foreground.
+- No resident services on mobile.
 
-## 24.6 Distribuição e qualidade
+## 24.6 Distribution and quality
 
-- Licença MIT.
-- Dependências externas mínimas.
-- Testes de segurança.
-- Testes de interoperabilidade.
-- Empacotamento para cada plataforma.
-- Revisão de segurança antes da publicação estável.
+- MIT license.
+- Minimal external dependencies.
+- Security tests.
+- Interoperability tests.
+- Packaging for each platform.
+- Security review before stable publication.
 
-**Status:** aprovado.
+**Status:** approved.
 
-Testes, integrações e revisões são atividades de execução e verificação, não decisões de produto pendentes.
+Tests, integrations and reviews are execution and verification activities, not pending product decisions.
 
-# 25. Plano de implementação
+# 25. Implementation plan
 
-## Fase 1 — Núcleo seguro em Go
+## Phase 1 — Secure core in Go
 
-Implementar:
+Implement:
 
-1. Identidades Ed25519.
-2. Fingerprints SHA-256.
+1. Ed25519 identities.
+2. SHA-256 fingerprints.
 3. TLS 1.3.
-4. Pareamento manual.
-5. Confiança persistente.
-6. Descoberta UDP.
-7. Conexão manual.
-8. Transferência básica de arquivos e textos.
+4. Manual pairing.
+5. Persistent trust.
+6. UDP discovery.
+7. Manual connection.
+8. Basic file and text transfer.
 
-## Fase 2 — Desktop e CLI
+## Phase 2 — Desktop and CLI
 
-Implementar:
+Implement:
 
-1. Interface Fyne.
-2. Descoberta a cada 30 segundos.
-3. Atualização manual.
+1. Fyne interface.
+2. Discovery every 30 seconds.
+3. Manual refresh.
 4. Clipboard.
-5. Autorização de recebimento.
-6. Controle de ciclo de vida desktop.
-7. CLI compartilhando o núcleo.
+5. Receive authorization.
+6. Desktop lifecycle control.
+7. CLI sharing the core.
 
-## Fase 3 — Mobile
+## Phase 3 — Mobile
 
-Implementar:
+Implement:
 
 1. Android.
 2. iOS/iPadOS.
-3. Integração com armazenamento.
-4. Clipboard sob ação explícita.
-5. Controle de primeiro plano.
-6. Testes entre desktop e mobile.
+3. Storage integration.
+4. Clipboard under explicit action.
+5. Foreground control.
+6. Desktop-to-mobile tests.
 
-## Fase 4 — Estabilização
+## Phase 4 — Stabilization
 
-Executar:
+Execute:
 
-1. Testes de segurança.
-2. Revisão do protocolo.
-3. Testes de interoperabilidade.
-4. Revisão de dependências.
-5. Documentação.
-6. Empacotamento.
-7. Publicação sob licença MIT.
+1. Security tests.
+2. Protocol review.
+3. Interoperability tests.
+4. Dependency review.
+5. Documentation.
+6. Packaging.
+7. Publication under the MIT license.
 
-# 26. Critérios de aceitação do MVP
+# 26. MVP acceptance criteria
 
-O MVP será considerado concluído quando:
+The MVP will be considered complete when:
 
-1. Dispositivos na mesma rede permitida puderem se descobrir por UDP.
-2. A descoberta ocorrer imediatamente ao abrir ou atualizar.
-3. As consultas periódicas ocorrerem a cada 30 segundos enquanto o aplicativo estiver disponível.
-4. A conexão manual por IP e porta funcionar.
-5. O primeiro pareamento exigir comparação cruzada de fingerprints completos.
-6. A confiança persistir até revogação manual.
-7. Identidades alteradas forem rejeitadas.
-8. O transporte utilizar TLS 1.3 com autenticação da identidade esperada.
-9. Toda transferência recebida exigir autorização.
-10. Arquivos, textos e links puderem ser transferidos.
-11. O clipboard puder ser enviado manualmente.
-12. Arquivos recebidos forem salvos no destino apropriado.
-13. Arquivos incompletos não forem apresentados como concluídos.
-14. Transferências interrompidas recomeçarem do zero.
-15. O desktop permitir concluir transferências já autorizadas após minimizar.
-16. O mobile exigir o aplicativo em primeiro plano.
-17. Não houver QR Code nem necessidade de câmera.
-18. Não houver conta, nuvem ou servidor central.
-19. A CLI e a GUI compartilharem o mesmo núcleo.
-20. O aplicativo funcionar nas plataformas definidas.
-21. O código-fonte e a documentação estiverem disponíveis sob licença MIT.
+1. Devices on the same permitted network can discover each other via UDP.
+2. Discovery happens immediately on open or refresh.
+3. Periodic queries happen every 30 seconds while the application is available.
+4. Manual connection by IP and port works.
+5. First pairing requires cross comparison of complete fingerprints.
+6. Trust persists until manual revocation.
+7. Changed identities are rejected.
+8. The transport uses TLS 1.3 with authentication of the expected identity.
+9. Every received transfer requires authorization.
+10. Files, texts and links can be transferred.
+11. The clipboard can be sent manually.
+12. Received files are saved to the appropriate destination.
+13. Incomplete files are not presented as completed.
+14. Interrupted transfers restart from scratch.
+15. The desktop allows completing already authorized transfers after minimizing.
+16. Mobile requires the application in the foreground.
+17. There is no QR Code and no need for a camera.
+18. There is no account, cloud or central server.
+19. The CLI and the GUI share the same core.
+20. The application works on the defined platforms.
+21. The source code and documentation are available under the MIT license.
 
 ---
 
-# 27. Estado final da especificação
+# 27. Final specification status
 
-**Versão:** 1.9  
-**Decisões de produto:** aprovadas  
-**Arquitetura:** aprovada  
-**Segurança:** abordagem aprovada; implementação sujeita a testes e revisão  
-**Descoberta:** UDP sob demanda, com intervalo de 30 segundos  
-**Pareamento:** fingerprint completo, sem QR Code  
+**Version:** 1.9  
+**Product decisions:** approved  
+**Architecture:** approved  
+**Security:** approach approved; implementation subject to tests and review  
+**Discovery:** on-demand UDP, with a 30-second interval  
+**Pairing:** complete fingerprint, no QR Code  
 **Interface:** Go + Fyne  
-**Licença:** MIT  
-**Próxima etapa:** implementação
+**License:** MIT  
+**Next step:** implementation
 
 ---
 
 # Tomorrow Drop
 
-**Transferiu. Usou. Pronto.**
+**Transferiu. Usou. Pronto.** (roughly "Transferred. Used. Done.")
 
-Um aplicativo local, direto e minimalista para compartilhar conteúdo entre dispositivos, com criptografia, autenticação explícita e controle do usuário.
+A local, direct and minimalist application for sharing content between devices, with encryption, explicit authentication and user control.

@@ -1,98 +1,98 @@
 
-# Tomorrow Drop — Tasks de implementação
+# Tomorrow Drop — Implementation tasks
 
-> Ordem de execução obrigatória: concluir e validar uma task antes de iniciar a próxima, salvo quando a task declarar explicitamente independência. Marcar `[x]` somente após implementação, testes e documentação correspondentes. Não alterar decisões do PRD v1.9 sem aprovação. Não inventar garantias de segurança nem substituir verificação de identidade por TOFU.
+> Mandatory execution order: complete and validate one task before starting the next, unless a task explicitly declares independence. Mark `[x]` only after implementation, tests and corresponding documentation. Do not change PRD v1.9 decisions without approval. Do not invent security guarantees or replace identity verification with TOFU.
 
-## 01 — Fundação do projeto
+## 01 — Project foundation
 
-[x] 001. Criar repositório Go com `go.mod`, estrutura modular (`cmd/tdrop`, `cmd/tomorrow-drop`, `internal/identity`, `internal/trust`, `internal/discovery`, `internal/transport`, `internal/protocol`, `internal/transfer`, `internal/storage`, `internal/lifecycle`, `internal/ui`), README e `.gitignore`.
-[x] 002. Adicionar licença MIT, avisos de dependências e documentação de compilação inicial para Linux, Windows e macOS.
-[   ] 003. Configurar lint, formatação (`gofmt`), testes (`go test ./...`), análise estática (`go vet ./...`) e pipeline CI multiplataforma.
-[x] 004. Definir padrões de erros, logging sem dados sensíveis, cancelamento com `context.Context`, limites de recursos e testes de unidade.
-[x] 005. Definir e documentar protocolo versionado: formatos de mensagens, framing, limites de tamanho, timeouts, identificadores de sessão, estados e negociação de versão.
+[x] 001. Create the Go repository with `go.mod`, modular structure (`cmd/tdrop`, `cmd/tomorrow-drop`, `internal/identity`, `internal/trust`, `internal/discovery`, `internal/transport`, `internal/protocol`, `internal/transfer`, `internal/storage`, `internal/lifecycle`, `internal/ui`), README and `.gitignore`.
+[x] 002. Add the MIT license, dependency notices and initial build documentation for Linux, Windows and macOS.
+[   ] 003. Configure lint, formatting (`gofmt`), tests (`go test ./...`), static analysis (`go vet ./...`) and a multi-platform CI pipeline.
+[x] 004. Define error standards, logging without sensitive data, cancellation with `context.Context`, resource limits and unit tests.
+[x] 005. Define and document the versioned protocol: message formats, framing, size limits, timeouts, session identifiers, states and version negotiation.
 
-## 02 — Identidade e confiança
+## 02 — Identity and trust
 
-[   ] 006. Implementar geração de identidade Ed25519 com `crypto/rand`, armazenamento persistente e permissões restritivas; não registrar a chave privada em logs.
-[   ] 007. Implementar carregamento e validação da identidade existente; tratar corrupção, ausência e regeneração deliberada sem sobrescrever silenciosamente.
-[   ] 008. Implementar fingerprint SHA-256 dos 32 bytes canônicos da chave pública Ed25519, exibindo todos os 64 caracteres hexadecimais em grupos legíveis.
-[   ] 009. Implementar armazenamento local de chaves públicas confiáveis, nomes amigáveis e revogação manual, com gravação segura e testes de persistência.
-[   ] 010. Implementar emissão e validação de certificados TLS vinculados à identidade Ed25519, usando APIs nativas de Go.
-[   ] 011. Implementar TLS 1.3 com autenticação criptográfica das identidades dos dois lados, validação de certificados e pinning; proibir aceitação insegura silenciosa em conexões confiáveis.
-[   ] 012. Implementar estado TLS provisório para primeiro contato: criptografado, porém sem confiança, com superfície de mensagens estritamente limitada ao pareamento.
-[   ] 013. Implementar fluxo de pareamento mútuo com comparação cruzada dos fingerprints completos e confirmações explícitas nos dois dispositivos, vinculadas à mesma sessão e às mesmas chaves.
-[   ] 014. Impedir transferências e comandos privilegiados antes da conclusão do pareamento; persistir confiança somente após confirmação mútua comprovada.
-[   ] 015. Rejeitar mudanças inesperadas de identidade e impedir downgrade, reutilização de confirmação ou confusão entre sessões.
-[   ] 016. Criar testes de segurança para MITM, substituição de chaves/certificados, sessão provisória, confirmação unilateral, revogação e reconexão.
+[x] 006. Implement Ed25519 identity generation with `crypto/rand`, persistent storage and restrictive permissions; do not log the private key.
+[x] 007. Implement loading and validation of an existing identity; handle corruption, absence and deliberate regeneration without silent overwrite.
+[x] 008. Implement the SHA-256 fingerprint of the 32 canonical bytes of the Ed25519 public key, displaying all 64 hexadecimal characters in readable groups.
+[x] 009. Implement local storage of trusted public keys, friendly names and manual revocation, with safe writes and persistence tests.
+[x] 010. Implement issuance and validation of TLS certificates bound to the Ed25519 identity, using native Go APIs.
+[x] 011. Implement TLS 1.3 with cryptographic authentication of both identities, certificate validation and pinning; forbid silent insecure acceptance on trusted connections.
+[x] 012. Implement a provisional TLS state for first contact: encrypted but untrusted, with a message surface strictly limited to pairing.
+[x] 013. Implement the mutual pairing flow with cross comparison of complete fingerprints and explicit confirmations on both devices, bound to the same session and the same keys.
+[x] 014. Block transfers and privileged commands before pairing completes; persist trust only after proven mutual confirmation.
+[x] 015. Reject unexpected identity changes and prevent downgrade, confirmation reuse or session confusion.
+[x] 016. Create security tests for MITM, key/certificate substitution, provisional sessions, unilateral confirmation, revocation and reconnection.
 
-## 03 — Descoberta e conectividade
+## 03 — Discovery and connectivity
 
-[   ] 017. Definir formato UDP versionado para `DISCOVER` e `ANNOUNCE`, com validação estrita, tamanho máximo e ausência de informações sensíveis.
-[   ] 018. Implementar listener de descoberta UDP enquanto o aplicativo estiver disponível, com respostas preferencialmente unicast, limitação por origem e atraso aleatório curto.
-[   ] 019. Implementar envio de `DISCOVER` imediatamente ao abrir/ativar o aplicativo e ao clicar em Atualizar.
-[   ] 020. Implementar consultas periódicas a cada 30 segundos somente enquanto o aplicativo estiver visível e disponível; reiniciar o contador após Atualizar e limitar cliques repetidos.
-[   ] 021. Suspender consultas periódicas durante transferências e interromper descoberta quando o aplicativo estiver minimizado ou em segundo plano.
-[   ] 022. Implementar lista efêmera de dispositivos encontrados, atualização/expiração de entradas e distinção visual entre descoberto e confiável.
-[   ] 023. Implementar conexão manual por IP:porta com validação de entrada e a mesma autenticação TLS do fluxo automático.
-[   ] 024. Testar descoberta e conectividade em Wi-Fi doméstico e redes empresariais: mesma VLAN, broadcast bloqueado, isolamento de clientes, múltiplas interfaces e ausência de rota.
+[   ] 017. Define a versioned UDP format for `DISCOVER` and `ANNOUNCE`, with strict validation, maximum size and no sensitive information.
+[   ] 018. Implement a UDP discovery listener while the application is available, with preferably unicast responses, per-origin rate limiting and a short random delay.
+[   ] 019. Send `DISCOVER` immediately when the application opens/activates and when Refresh is clicked.
+[   ] 020. Implement periodic queries every 30 seconds only while the application is visible and available; restart the counter after Refresh and limit repeated clicks.
+[   ] 021. Suspend periodic queries during transfers and stop discovery when the application is minimized or in the background.
+[   ] 022. Implement an ephemeral list of discovered devices, entry update/expiration and visual distinction between discovered and trusted devices.
+[   ] 023. Implement manual connection by IP:port with input validation and the same TLS authentication as the automatic flow.
+[   ] 024. Test discovery and connectivity on home Wi-Fi and enterprise networks: same VLAN, blocked broadcast, client isolation, multiple interfaces and no route.
 
-## 04 — Protocolo e transferência
+## 04 — Protocol and transfer
 
-[   ] 025. Implementar máquina de estados de conexão e transferência, com cancelamento, timeouts, limites de concorrência e limpeza determinística.
-[   ] 026. Definir metadados de oferta (tipo, nomes, tamanhos e quantidade), validação de caminhos e limites para impedir traversal e exaustão de recursos.
-[   ] 027. Implementar solicitação de recebimento com identidade autenticada e aceite/recusa obrigatórios para **cada** transferência, inclusive entre dispositivos confiáveis.
-[   ] 028. Implementar transferência de texto e links via TLS 1.3 autenticado, sem histórico persistente.
-[   ] 029. Implementar envio de arquivo único em streaming, sem carregar todo o conteúdo na memória.
-[   ] 030. Implementar envio de múltiplos arquivos, com progresso individual e total e comportamento definido para falha parcial.
-[   ] 031. Implementar gravação de recebimentos em arquivos temporários com nomes imprevisíveis, validação de tamanho, hash de conteúdo e confirmação de conclusão.
-[   ] 032. Implementar publicação segura do arquivo concluído, evitando sobrescrita silenciosa e colisões de nomes; usar operação atômica quando suportada.
-[   ] 033. Implementar cancelamento, erro, timeout e queda de conexão: invalidar transferência, excluir parciais e exigir reenvio desde o primeiro byte.
-[   ] 034. Implementar limpeza de arquivos temporários abandonados por encerramentos inesperados, sem apagar arquivos alheios ao aplicativo.
-[   ] 035. Implementar salvamento padrão em Downloads no desktop e abstração de armazenamento para mecanismos nativos de Android e iOS.
-[   ] 036. Criar testes de integridade, arquivos grandes, arquivos vazios, múltiplos arquivos, falhas aos 99%, nomes maliciosos, limites e concorrência.
+[   ] 025. Implement the connection and transfer state machine, with cancellation, timeouts, concurrency limits and deterministic cleanup.
+[   ] 026. Define offer metadata (type, names, sizes and count), path validation and limits to prevent traversal and resource exhaustion.
+[   ] 027. Implement receive requests with authenticated identity and mandatory accept/decline for **each** transfer, including between trusted devices.
+[   ] 028. Implement text and link transfer over authenticated TLS 1.3, without persistent history.
+[   ] 029. Implement single-file sending in streaming mode, without loading all content into memory.
+[   ] 030. Implement multiple-file sending, with individual and total progress and defined behavior for partial failure.
+[   ] 031. Implement writing received data to temporary files with unpredictable names, size validation, content hash and completion confirmation.
+[   ] 032. Implement secure publication of the completed file, avoiding silent overwrite and name collisions; use an atomic operation when supported.
+[   ] 033. Implement cancellation, error, timeout and connection drop: invalidate the transfer, delete partial data and require resending from the first byte.
+[   ] 034. Implement cleanup of temporary files abandoned by unexpected shutdowns, without deleting files not belonging to the application.
+[   ] 035. Implement default saving to Downloads on desktop and a storage abstraction for native Android and iOS mechanisms.
+[   ] 036. Create tests for integrity, large files, empty files, multiple files, failures at 99%, malicious names, limits and concurrency.
 
 ## 05 — CLI
 
-[   ] 037. Implementar `tdrop identity show`, exibindo identidade local e fingerprint completo sem revelar chave privada.
-[   ] 038. Implementar `tdrop discover` e conexão manual por IP:porta.
-[   ] 039. Implementar `tdrop pair <destino>` com confirmação interativa e verificação mútua.
-[   ] 040. Implementar `tdrop trust list` e `tdrop trust remove <id>`.
-[   ] 041. Implementar `tdrop send <arquivo> --to <destino>` e `tdrop send --stdin --to <destino>`.
-[   ] 042. Implementar `tdrop receive` com autorização interativa obrigatória por padrão.
-[   ] 043. Implementar `tdrop daemon` como modo contínuo explicitamente iniciado, documentando regras de autorização não interativa quando configuradas.
-[   ] 044. Criar testes de integração CLI↔CLI, códigos de saída, stdout/stderr, cancelamento e execução headless.
+[   ] 037. Implement `tdrop identity show`, displaying the local identity and complete fingerprint without revealing the private key.
+[   ] 038. Implement `tdrop discover` and manual connection by IP:port.
+[   ] 039. Implement `tdrop pair <destination>` with interactive confirmation and mutual verification.
+[   ] 040. Implement `tdrop trust list` and `tdrop trust remove <id>`.
+[   ] 041. Implement `tdrop send <file> --to <destination>` and `tdrop send --stdin --to <destination>`.
+[   ] 042. Implement `tdrop receive` with mandatory interactive authorization by default.
+[   ] 043. Implement `tdrop daemon` as an explicitly started continuous mode, documenting non-interactive authorization rules when configured.
+[   ] 044. Create CLI↔CLI integration tests, exit codes, stdout/stderr, cancellation and headless execution.
 
-## 06 — Interface desktop Fyne
+## 06 — Fyne desktop interface
 
-[   ] 045. Criar aplicativo Fyne com identidade visual minimalista: logotipo de duas montanhas e sol, tema escuro, hierarquia simples e componentes acessíveis.
-[   ] 046. Implementar tela inicial com Enviar, Receber, dispositivos encontrados, Atualizar, conexão manual e configurações.
-[   ] 047. Implementar tela de pareamento com fingerprints completos de ambos os dispositivos, orientação de conferência cruzada, confirmação explícita e cancelamento.
-[   ] 048. Implementar tela de dispositivos confiáveis, inspeção de fingerprint e remoção de confiança.
-[   ] 049. Implementar seleção de arquivos, composição de texto e prévia do conteúdo antes do envio.
-[   ] 050. Implementar ação manual “Enviar área de transferência” para texto e links; adicionar imagens copiadas somente onde as APIs suportarem, sem monitoramento automático.
-[   ] 051. Implementar diálogo de recebimento com identidade do remetente, nomes, tamanhos e botões Aceitar/Recusar.
-[   ] 052. Implementar progresso, cancelamento, erros claros e tela de conclusão, sem histórico persistente.
-[   ] 053. Implementar comportamento desktop: visível permite descoberta/listener; minimizado fecha listener e descoberta, mas mantém somente transferências previamente autorizadas até terminarem/falharem/cancelarem; fechar o app cancela tudo.
-[   ] 054. Testar GUI desktop em Linux, Windows e macOS, incluindo minimizar durante transferência, retorno à janela, encerramento e permissões de arquivos.
+[   ] 045. Create the Fyne application with a minimalist visual identity: two-mountains-and-sun logo, dark theme, simple hierarchy and accessible components.
+[   ] 046. Implement the home screen with Send, Receive, discovered devices, Refresh, manual connection and settings.
+[   ] 047. Implement the pairing screen with the complete fingerprints of both devices, cross-comparison guidance, explicit confirmation and cancellation.
+[   ] 048. Implement the trusted devices screen, fingerprint inspection and trust removal.
+[   ] 049. Implement file selection, text composition and content preview before sending.
+[   ] 050. Implement the manual “Send clipboard” action for text and links; add copied images only where the APIs support it, without automatic monitoring.
+[   ] 051. Implement the receive dialog with sender identity, names, sizes and Accept/Decline buttons.
+[   ] 052. Implement progress, cancellation, clear errors and a completion screen, without persistent history.
+[   ] 053. Implement desktop behavior: visible allows discovery/listener; minimized closes the listener and discovery but keeps only previously authorized transfers until they finish, fail or are cancelled; closing the app cancels everything.
+[   ] 054. Test the desktop GUI on Linux, Windows and macOS, including minimizing during a transfer, returning to the window, shutdown and file permissions.
 
-## 07 — Android e iOS/iPadOS
+## 07 — Android and iOS/iPadOS
 
-[   ] 055. Preparar builds Fyne para Android e iOS/iPadOS, identificando requisitos de toolchain, assinatura e permissões mínimas de rede local.
-[   ] 056. Integrar descoberta UDP e TLS aos eventos de primeiro plano/segundo plano em Android e iOS; não criar serviço de transferência em background.
-[   ] 057. Implementar interrupção de descoberta, pareamento e transferências ao entrar em segundo plano ou bloquear a tela, com limpeza de recursos e recomeço do zero.
-[   ] 058. Integrar seleção e salvamento de arquivos por mecanismos nativos: Downloads quando viável no Android e localização acessível pelo app Arquivos/exportação no iOS.
-[   ] 059. Integrar leitura manual de clipboard no mobile, sem monitoramento e sem permissão de câmera; validar suporte real a texto, links e imagens.
-[   ] 060. Adaptar telas Fyne para toque, diferentes tamanhos de tela, acessibilidade e orientação.
-[   ] 061. Executar testes em dispositivos reais Android↔desktop, iOS↔desktop e Android↔iOS, incluindo permissões, suspensão e rede corporativa.
+[   ] 055. Prepare Fyne builds for Android and iOS/iPadOS, identifying toolchain, signing and minimum local-network permission requirements.
+[   ] 056. Integrate UDP discovery and TLS with foreground/background events on Android and iOS; do not create a background transfer service.
+[   ] 057. Implement interruption of discovery, pairing and transfers when entering the background or locking the screen, with resource cleanup and a fresh start.
+[   ] 058. Integrate file selection and saving through native mechanisms: Downloads where feasible on Android, and a location accessible through the Files app/export on iOS.
+[   ] 059. Integrate manual clipboard reading on mobile, without monitoring and without camera permission; validate real support for text, links and images.
+[   ] 060. Adapt Fyne screens for touch, different screen sizes, accessibility and orientation.
+[   ] 061. Run tests on real Android↔desktop, iOS↔desktop and Android↔iOS devices, including permissions, suspension and enterprise networks.
 
-## 08 — Segurança, qualidade e lançamento
+## 08 — Security, quality and release
 
-[   ] 062. Revisar modelo de ameaças, estados de autenticação, validação TLS e pinning; executar testes adversariais do primeiro pareamento.
-[   ] 063. Aplicar fuzzing aos parsers UDP, mensagens de protocolo, metadados e framing; verificar limites de memória e CPU.
-[   ] 064. Revisar armazenamento de chaves privadas, permissões, logs, arquivos temporários, tratamento de erros e proteção contra sobrescrita.
-[   ] 065. Validar interoperabilidade completa GUI↔GUI, GUI↔CLI e CLI↔CLI em plataformas suportadas.
-[   ] 066. Executar testes de desempenho e estabilidade para arquivos grandes, conexões lentas, falhas de rede e muitos dispositivos em uma VLAN.
-[   ] 067. Revisar dependências, licenças e cadeia de compilação; gerar lista de dependências e instruções reproduzíveis de build.
-[   ] 068. Documentar instalação, pareamento seguro, conexão manual, comportamento de 30 segundos, clipboard, Downloads, ciclo de vida e limites do aplicativo.
-[   ] 069. Preparar empacotamento e distribuição para Linux, Windows, macOS, Android e iOS/iPadOS, incluindo assinatura quando exigida.
-[   ] 070. Executar checklist final do PRD v1.9 e registrar evidências de aprovação de todos os critérios de aceitação do MVP.
+[   ] 062. Review the threat model, authentication states, TLS validation and pinning; run adversarial tests of first pairing.
+[   ] 063. Apply fuzzing to the UDP parsers, protocol messages, metadata and framing; verify memory and CPU limits.
+[   ] 064. Review private key storage, permissions, logs, temporary files, error handling and overwrite protection.
+[   ] 065. Validate full interoperability GUI↔GUI, GUI↔CLI and CLI↔CLI on supported platforms.
+[   ] 066. Run performance and stability tests for large files, slow connections, network failures and many devices on one VLAN.
+[   ] 067. Review dependencies, licenses and the build chain; generate a dependency list and reproducible build instructions.
+[   ] 068. Document installation, secure pairing, manual connection, the 30-second behavior, clipboard, Downloads, lifecycle and application limits.
+[   ] 069. Prepare packaging and distribution for Linux, Windows, macOS, Android and iOS/iPadOS, including signing when required.
+[   ] 070. Run the final PRD v1.9 checklist and record evidence of approval for all MVP acceptance criteria.

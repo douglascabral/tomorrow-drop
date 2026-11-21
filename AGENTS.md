@@ -1,39 +1,49 @@
 # AGENTS.md — Tomorrow Drop
 
-## Estrutura
+## Structure
 
-- Manter um **monorepo Git com um único módulo Go** (`go.mod` na raiz).
+- Keep a **Git monorepo with a single Go module** (`go.mod` at the root).
 - `cmd/tdrop/`: CLI.
-- `cmd/tomorrow-drop/`: aplicativo gráfico Fyne.
-- `internal/`: núcleo compartilhado.
-- `assets/`: recursos visuais.
-- `docs/`: PRD e documentação técnica.
-- `scripts/`: automação de build e distribuição.
-- Isolar integrações específicas de plataforma com interfaces e *build tags*.
-- **Nunca importar Fyne no núcleo compartilhado.**
+- `cmd/tomorrow-drop/`: Fyne graphical application.
+- `internal/`: shared core.
+- `assets/`: visual resources.
+- `docs/`: PRD and technical documentation.
+- `scripts/`: build and distribution automation.
+- Isolate platform-specific integrations behind interfaces and *build tags*.
+- **Never import Fyne in the shared core.**
 
-## Desenvolvimento
+## Development
 
-- Seguir o PRD e executar `TOMORROW_DROP_TASKS.md` na ordem definida.
-- **TDD obrigatório:** escrever o teste primeiro, confirmar que falha, implementar e refatorar.
-- Priorizar a biblioteca padrão de Go e minimizar dependências.
-- Nunca implementar criptografia própria ou enfraquecer verificações de segurança.
-- Manter alterações pequenas, coesas e testáveis.
+- Follow the PRD and execute `TOMORROW_DROP_TASKS.md` in the defined order.
+- **TDD is mandatory:** write the test first, confirm it fails, implement and refactor.
+- Prefer the Go standard library and minimize dependencies.
+- Never implement custom cryptography or weaken security checks.
+- Keep changes small, cohesive and testable.
 
-## Regras inegociáveis de testes
+## Internationalization (i18n)
 
-- **Nunca pular, desativar, remover ou enfraquecer um teste para fazer a suíte passar.**
-- Proibido usar `skip`, `xfail`, exclusões, mocks artificiais ou alterações de assertions para esconder falhas.
-- Se um teste falhar, investigar e corrigir a causa raiz.
-- **Todo bug ou erro identificado exige um teste de regressão antes da correção.**
-- O teste de regressão deve reproduzir o problema e falhar antes da correção.
-- Após corrigir, executar o teste de regressão e a suíte completa.
-- Manter permanentemente os testes de regressão para impedir que o bug retorne.
-- Nunca declarar sucesso com testes falhando ou verificações não executadas.
+- The software is multilingual. Initial language: **Brazilian Portuguese (`pt-BR`)**. Mandatory fallback: **English (`en`)**.
+- By default, the language is detected from the operating system (the user's locale). Unsupported languages fall back to `en`.
+- The user can choose the language in the application settings, overriding automatic detection. The choice is persisted, and the "auto" option returns to system detection.
+- Every user-visible text (GUI, CLI, displayed error messages) comes from translation files, never from literals scattered through the code.
+- Translation files are versioned with the code, with the same keys in every language. A key missing from the chosen language uses the `en` text.
+- Detection, selection and fallback logic lives in the core and does not depend on Fyne. Only the presentation layer consumes translations.
+- Required tests: system detection, settings override, fallback to `en` and key parity across translation files.
 
-## Validação obrigatória
+## Test rules (non-negotiable)
 
-Ao concluir **cada bloco de tarefas**, executar:
+- **Never skip, disable, remove or weaken a test to make the suite pass.**
+- Forbidden: `skip`, `xfail`, exclusions, artificial mocks or changes to assertions to hide failures.
+- If a test fails, investigate and fix the root cause.
+- **Every bug or error identified requires a regression test before the fix.**
+- The regression test must reproduce the problem and fail before the fix.
+- After fixing, run the regression test and the full suite.
+- Keep regression tests permanently to prevent the bug from returning.
+- Never declare success with failing tests or unexecuted checks.
+
+## Mandatory validation
+
+At the end of **each block of tasks**, run:
 
 ```bash
 gofmt -l .
@@ -46,20 +56,49 @@ semgrep scan --config auto .
 trivy fs .
 ```
 
-- Corrigir problemas encontrados antes de avançar.
-- Ruff é aplicável apenas quando houver código Python; caso contrário, registrar como não aplicável.
-- Investigar e documentar falsos positivos, sem desabilitar verificações indiscriminadamente.
-- Não marcar tarefas como concluídas enquanto houver falhas relevantes.
-- Atualizar `[   ]` para `[x]` somente após implementação e validação.
+- Fix the problems found before moving on.
+- Ruff applies only when Python code exists; otherwise record it as not applicable.
+- Investigate and document false positives, without disabling checks indiscriminately.
+- Do not mark tasks as completed while relevant failures remain.
+- Change `[   ]` to `[x]` only after implementation and validation.
 
-## Critério de conclusão
+## Commits
 
-Um bloco estará concluído somente quando:
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/). Commit messages are always written in English, including the subject, body and footers, even though the user communicates in Portuguese.
 
-- A implementação atender ao PRD.
-- Os testes TDD e de regressão passarem.
-- A suíte completa estiver verde.
-- As ferramentas de qualidade e segurança tiverem sido executadas e seus resultados tratados.
-- A documentação necessária estiver atualizada.
+- Format: `type(scope): subject`. Scope is optional and names the affected package or area (`identity`, `trust`, `transport`, `i18n`, `cli`, `docs`, `ci`).
+- Allowed types: `feat`, `fix`, `refactor`, `test`, `docs`, `build`, `ci`, `chore`.
+- Subject: imperative mood, lowercase after the type, no trailing period, 72 characters or fewer.
+- Body (when needed): wrapped at 72 characters, explaining *why* the change was made. Reference the task when there is one, for example `Refs: task 013`.
+- Breaking changes: add a `BREAKING CHANGE:` footer describing the impact.
+- One logical change per commit. Do not mix refactors, features and formatting in the same commit.
+- A `fix` commit includes its regression test in the same commit (see "Test rules").
+- Commit only after `scripts/check.sh` passes for the affected block, and only when the user asks for a commit.
 
-**Regra final: corrigir o código, nunca maquiar os testes.**
+Examples:
+
+```
+feat(identity): generate and persist Ed25519 identity
+
+Keys use crypto/rand and are stored as PKCS#8 PEM with 0600 permissions.
+Refs: task 006
+```
+
+```
+fix(storage): remove partial files when a write fails
+
+The regression test reproduces the partial file before the fix and stays in
+the suite afterwards.
+```
+
+## Completion criteria
+
+A block is complete only when:
+
+- The implementation meets the PRD.
+- TDD and regression tests pass.
+- The full suite is green.
+- Quality and security tools have been run and their results addressed.
+- The required documentation is up to date.
+
+**Final rule: fix the code, never game the tests.**

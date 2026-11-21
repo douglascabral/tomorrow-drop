@@ -1,46 +1,48 @@
 # Tomorrow Drop
 
-**Transferiu. Usou. Pronto.**
+**Transferiu. Usou. Pronto.** (roughly "Transferred. Used. Done.")
 
-Aplicativo livre e minimalista para transferir arquivos, textos, links e conteúdo da área de transferência entre dispositivos na mesma rede local. Não usa contas, nuvem, servidores centrais nem conexão com a internet.
+Free, minimalist application to transfer files, texts, links and clipboard content between devices on the same local network. It uses no accounts, cloud, central servers or internet connection.
 
-> **Status:** fundação do projeto (bloco 01). Descoberta, pareamento, transferência e interfaces ainda não estão implementados. Ver [TOMORROW_DROP_TASKS.md](TOMORROW_DROP_TASKS.md).
+> **Status:** identity, trust and pairing implemented (blocks 01 and 02). Discovery, transfer and interfaces are not implemented yet. See [TOMORROW_DROP_TASKS.md](TOMORROW_DROP_TASKS.md).
 
-## Documentação
+## Documentation
 
-- [PRD v1.9](docs/PRD.md): requisitos, decisões de produto e critérios de aceitação.
-- [Compilação](docs/COMPILACAO.md): build para Linux, Windows e macOS.
-- [Protocolo](docs/PROTOCOLO.md): framing, versão, estados, limites e timeouts.
-- [Padrões do núcleo](docs/PADROES.md): erros, logging, cancelamento e testes.
-- [Qualidade](docs/QUALIDADE.md): verificações e ferramentas.
-- [Avisos de terceiros](THIRD_PARTY_NOTICES.md): dependências e licenças.
+- [PRD v1.9](docs/PRD.md): requirements, product decisions and acceptance criteria.
+- [Build](docs/COMPILACAO.md): build for Linux, Windows and macOS.
+- [Protocol](docs/PROTOCOLO.md): framing, version, states, limits and timeouts.
+- [Identity and trust](docs/IDENTIDADE.md): keys, fingerprint, TLS, pairing and message policy.
+- [Languages](docs/IDIOMAS.md): pt-BR as the initial language, English as fallback, system detection and user choice.
+- [Core standards](docs/PADROES.md): errors, logging, cancellation and tests.
+- [Quality](docs/QUALIDADE.md): checks and tools.
+- [Third-party notices](THIRD_PARTY_NOTICES.md): dependencies and licenses.
 
-## Estrutura
+## Structure
 
 ```
 cmd/tdrop/            CLI
-cmd/tomorrow-drop/    aplicativo gráfico (Fyne, a integrar na tarefa 045)
-internal/             núcleo compartilhado entre GUI e CLI
-assets/               recursos visuais
-docs/                 PRD e documentação técnica
-scripts/              automação de verificação e distribuição
+cmd/tomorrow-drop/    graphical application (Fyne, to be integrated in task 045)
+internal/             core shared by the GUI and the CLI
+assets/               visual resources
+docs/                 PRD and technical documentation
+scripts/              quality and security check automation
 ```
 
-Pacotes do núcleo: `identity`, `trust`, `discovery`, `transport`, `protocol`, `transfer`, `storage`, `lifecycle`, `ui`, além de `apperr`, `safelog` e `limits` (base comum).
+Core packages: `identity`, `trust`, `discovery`, `transport`, `protocol`, `transfer`, `storage`, `lifecycle`, `ui`, plus `apperr`, `safelog`, `limits`, `i18n` and `settings` (shared base).
 
-Regra de arquitetura: o núcleo nunca importa Fyne. Integrações específicas de plataforma ficam atrás de interfaces e *build tags*.
+Architecture rule: the core never imports Fyne. Platform-specific integrations stay behind interfaces and build tags.
 
-## Desenvolvimento
+## Development
 
-Requisitos: Go 1.24 ou superior.
+Requirements: Go 1.24 or later.
 
 ```sh
 go test ./...
 go test -race ./...
 ```
 
-Para executar todas as verificações de qualidade e segurança, veja [docs/QUALIDADE.md](docs/QUALIDADE.md).
+To run all quality and security checks, see [docs/QUALIDADE.md](docs/QUALIDADE.md).
 
-## Licença
+## License
 
 [MIT](LICENSE).

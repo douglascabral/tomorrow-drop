@@ -1,18 +1,18 @@
-# Compilação
+# Build
 
-Este documento descreve a compilação inicial do núcleo e da CLI. A compilação da GUI Fyne será documentada quando a tarefa 045 for concluída, pois exige dependências de sistema próprias de cada plataforma.
+This document describes the initial build of the core and the CLI. The build of the Fyne GUI will be documented when task 045 is complete, because it requires system dependencies specific to each platform.
 
-## Requisitos
+## Requirements
 
-- Go 1.24 ou superior (versão mínima declarada em `go.mod`).
-- Git, para obter o código.
+- Go 1.24 or later (minimum version declared in `go.mod`).
+- Git, to obtain the code.
 
-Nenhuma dependência externa é necessária hoje.
+No external dependencies are needed today.
 
 ## Linux
 
 ```sh
-git clone <url-do-repositorio> tomorrow-drop
+git clone <repository-url> tomorrow-drop
 cd tomorrow-drop
 go build -o bin/tdrop ./cmd/tdrop
 ./bin/tdrop version
@@ -21,7 +21,7 @@ go test ./...
 
 ## macOS
 
-Os comandos são os mesmos do Linux:
+The commands are the same as on Linux:
 
 ```sh
 go build -o bin/tdrop ./cmd/tdrop
@@ -37,13 +37,13 @@ go build -o bin\tdrop.exe .\cmd\tdrop
 go test .\...
 ```
 
-## Verificações completas
+## Full checks
 
-`scripts/check.sh` executa gofmt, golangci-lint, go vet, testes (com e sem `-race`), lizard, semgrep e trivy. Ele exige que todas as ferramentas estejam instaladas e falha se alguma estiver ausente. Ver [QUALIDADE.md](QUALIDADE.md).
+`scripts/check.sh` runs gofmt, golangci-lint, go vet, tests (with and without `-race`), lizard, semgrep and trivy. It requires all tools to be installed and fails if any is missing. See [QUALIDADE.md](QUALIDADE.md).
 
-## Binários reproduzíveis
+## Reproducible binaries
 
-Para builds de release, use `CGO_ENABLED=0` quando o binário não depender de cgo:
+For release builds, use `CGO_ENABLED=0` when the binary does not depend on cgo:
 
 ```sh
 CGO_ENABLED=0 go build -trimpath -o bin/tdrop ./cmd/tdrop
