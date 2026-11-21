@@ -211,5 +211,6 @@
   "ios.receive.running": "Receiving files",
   "ios.background.title": "Transfer interrupted",
   "ios.background.message": "The app left the screen, so the other device could not reach it. Keep the app open during transfers.",
-  "gui.home.visible_only_open": "Visible only while the app is open."
+  "gui.home.visible_only_open": "Visible only while the app is open.",
+  "cli.tutorial": "Getting started\n\n1. See this device's identity:\n   tdrop identity show\n\n2. On the other device, keep it listening:\n   tdrop daemon\n\n3. Find the devices on the network:\n   tdrop discover\n   If broadcast is blocked: tdrop discover --target IP:port\n\n4. Pair once, comparing the fingerprints on both devices:\n   tdrop pair <device> --name \"Name\"\n\n5. Send files or text to a paired device:\n   tdrop send <file>... --to <device>\n   echo \"text\" | tdrop send --stdin --to <device>\n\n6. Receive: tdrop receive waits for one transfer; tdrop daemon keeps receiving. Use --out DIR to choose the folder.\n\n7. Manage paired devices: tdrop trust list and tdrop trust remove <id>.\n\nPorts: 47520 (UDP, discovery) and 47521 (TCP, transfers)."
 }

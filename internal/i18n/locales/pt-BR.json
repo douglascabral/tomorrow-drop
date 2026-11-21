@@ -211,5 +211,6 @@
   "ios.receive.running": "Recebendo arquivos",
   "ios.background.title": "Transferência interrompida",
   "ios.background.message": "O app saiu da tela e o outro dispositivo não conseguiu alcançá-lo. Mantenha o app aberto durante as transferências.",
-  "gui.home.visible_only_open": "Visível só com o app aberto."
+  "gui.home.visible_only_open": "Visível só com o app aberto.",
+  "cli.tutorial": "Primeiros passos\n\n1. Veja a identidade deste aparelho:\n   tdrop identity show\n\n2. No outro aparelho, deixe-o escutando:\n   tdrop daemon\n\n3. Encontre os dispositivos na rede:\n   tdrop discover\n   Se o broadcast estiver bloqueado: tdrop discover --target IP:porta\n\n4. Pareie uma vez, comparando as impressões digitais nos dois aparelhos:\n   tdrop pair <dispositivo> --name \"Nome\"\n\n5. Envie arquivos ou texto a um dispositivo pareado:\n   tdrop send <arquivo>... --to <dispositivo>\n   echo \"texto\" | tdrop send --stdin --to <dispositivo>\n\n6. Receba: tdrop receive espera uma transferência; tdrop daemon continua recebendo. Use --out PASTA para escolher a pasta.\n\n7. Gerencie os pareados: tdrop trust list e tdrop trust remove <id>.\n\nPortas: 47520 (UDP, descoberta) e 47521 (TCP, transferências)."
 }

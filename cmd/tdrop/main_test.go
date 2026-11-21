@@ -97,3 +97,33 @@ func TestConfigLanguageShowsTranslatedErrorForCorruptedSettings(t *testing.T) {
 		t.Fatalf("stderr leaked the untranslated internal message: %q", errb.String())
 	}
 }
+
+// The help shows the getting-started steps after the command list, so a person
+// who types help sees how to use the CLI, not only its names.
+func TestHelpShowsTheGettingStartedSteps(t *testing.T) {
+	e := portugueseEnv(t)
+	var out, errb bytes.Buffer
+	if code := run([]string{"help"}, &out, &errb, e); code != 0 {
+		t.Fatalf("run(help) = %d, want 0 (stderr: %s)", code, errb.String())
+	}
+	want := e.Tr.T("cli.tutorial")
+	if !strings.Contains(out.String(), want) {
+		t.Fatalf("help does not show the getting-started steps; output = %q", out.String())
+	}
+}
+
+// Typing the bare command still fails with the usage (code 2), and it also
+// shows the steps on the error output, where usage messages go.
+func TestNoArgumentsAlsoShowsTheGettingStartedSteps(t *testing.T) {
+	e := portugueseEnv(t)
+	var out, errb bytes.Buffer
+	if code := run(nil, &out, &errb, e); code != 2 {
+		t.Fatalf("run() = %d, want 2", code)
+	}
+	if !strings.Contains(errb.String(), e.Tr.T("cli.tutorial")) {
+		t.Fatalf("stderr does not show the getting-started steps; stderr = %q", errb.String())
+	}
+	if out.Len() != 0 {
+		t.Fatalf("stdout should be empty on error, got %q", out.String())
+	}
+}

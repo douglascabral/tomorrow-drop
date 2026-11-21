@@ -68,6 +68,8 @@ func runCtx(ctx context.Context, args []string, stdout, stderr io.Writer, e env)
 	switch {
 	case len(args) >= 1 && (args[0] == "help" || args[0] == "--help" || args[0] == "-h"):
 		_, _ = fmt.Fprintln(stdout, e.Tr.T("cli.help"))
+		_, _ = fmt.Fprintln(stdout)
+		_, _ = fmt.Fprintln(stdout, e.Tr.T("cli.tutorial"))
 		return exitOK
 	case len(args) == 1 && args[0] == "version":
 		_, _ = fmt.Fprintln(stdout, e.Tr.T("cli.versao", version, protocol.CurrentVersion))
@@ -78,10 +80,20 @@ func runCtx(ctx context.Context, args []string, stdout, stderr io.Writer, e env)
 		return saveLanguage(args[2], stdout, stderr, &e)
 	}
 
-	c := &cmd{ctx: ctx, stdout: stdout, stderr: stderr, e: &e}
+	return dispatchCommand(ctx, args, stdout, stderr, &e)
+}
+
+// dispatchCommand runs a command and reports its outcome on stderr. The bare
+// command fails with its usage, and the steps show how to start.
+func dispatchCommand(ctx context.Context, args []string, stdout, stderr io.Writer, e *env) int {
+	c := &cmd{ctx: ctx, stdout: stdout, stderr: stderr, e: e}
 	code, msg := report(e.Tr, c.dispatch(args))
 	if msg != "" {
 		_, _ = fmt.Fprintln(stderr, msg)
+	}
+	if len(args) == 0 {
+		_, _ = fmt.Fprintln(stderr)
+		_, _ = fmt.Fprintln(stderr, e.Tr.T("cli.tutorial"))
 	}
 	return code
 }
