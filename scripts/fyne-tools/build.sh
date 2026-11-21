@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the Fyne packaging tool with the iOS patch applied.
+# Builds the Fyne packaging tool with the iOS and Android patches applied.
 #
 # The official tool hard-codes the iOS deployment target 13.0, which current
 # Xcode rejects, and it does not declare NSLocalNetworkUsageDescription, which
@@ -18,6 +18,7 @@ cp -R "$src/." "$work/"
 chmod -R u+w "$work"
 
 patch -d "$work" -p1 < "$root/scripts/fyne-tools/ios-deployment-and-local-network.patch"
+patch -d "$work" -p1 < "$root/scripts/fyne-tools/android-keep-screen-on.patch"
 
 mkdir -p "$out"
 (cd "$work" && go build -o "$out/fyne-ios15" ./cmd/fyne)
