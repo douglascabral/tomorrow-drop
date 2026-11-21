@@ -22,14 +22,14 @@ import (
 
 const testTimeout = 30 * time.Second
 
-func testCtx(t *testing.T) context.Context {
+func testCtx(t testing.TB) context.Context {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	t.Cleanup(cancel)
 	return ctx
 }
 
-func newIdentity(t *testing.T) *identity.Identity {
+func newIdentity(t testing.TB) *identity.Identity {
 	t.Helper()
 	id, err := identity.Generate()
 	if err != nil {
@@ -38,12 +38,12 @@ func newIdentity(t *testing.T) *identity.Identity {
 	return id
 }
 
-func newStore(t *testing.T) *trust.Store {
+func newStore(t testing.TB) *trust.Store {
 	t.Helper()
 	return trust.Open(filepath.Join(t.TempDir(), "trust.json"))
 }
 
-func tcpPair(t *testing.T) (net.Conn, net.Conn) {
+func tcpPair(t testing.TB) (net.Conn, net.Conn) {
 	t.Helper()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -75,7 +75,7 @@ func tcpPair(t *testing.T) (net.Conn, net.Conn) {
 }
 
 // pairOnce runs the real pairing between a and b, so each trusts the other.
-func pairOnce(t *testing.T, ctx context.Context, a, b *identity.Identity, sa, sb *trust.Store) {
+func pairOnce(t testing.TB, ctx context.Context, a, b *identity.Identity, sa, sb *trust.Store) {
 	t.Helper()
 	c1, c2 := tcpPair(t)
 	ch := make(chan *transport.Session, 1)
@@ -121,7 +121,7 @@ func pairOnce(t *testing.T, ctx context.Context, a, b *identity.Identity, sa, sb
 
 // connectTrusted opens a new connection between two already-paired devices.
 // It returns (sender, receiver) sessions, both in the trusted state.
-func connectTrusted(t *testing.T, ctx context.Context, a, b *identity.Identity, sa, sb *trust.Store) (*transport.Session, *transport.Session) {
+func connectTrusted(t testing.TB, ctx context.Context, a, b *identity.Identity, sa, sb *trust.Store) (*transport.Session, *transport.Session) {
 	t.Helper()
 	c1, c2 := tcpPair(t)
 	ch := make(chan *transport.Session, 1)
@@ -143,16 +143,32 @@ func connectTrusted(t *testing.T, ctx context.Context, a, b *identity.Identity, 
 	return sender, receiver
 }
 
-// pairedSessions pairs two new devices and returns a trusted connection between them.
-func pairedSessions(t *testing.T, ctx context.Context) (*transport.Session, *transport.Session) {
-	t.Helper()
-	a, b := newIdentity(t), newIdentity(t)
-	sa, sb := newStore(t), newStore(t)
-	pairOnce(t, ctx, a, b, sa, sb)
-	return connectTrusted(t, ctx, a, b, sa, sb)
+// pairedParties are two devices that have paired, so they can reconnect.
+type pairedParties struct {
+	a, b   *identity.Identity
+	sa, sb *trust.Store
 }
 
-func receiverFor(t *testing.T, dest string, decide Decision) *Receiver {
+func newPairedParties(t testing.TB, ctx context.Context) pairedParties {
+	t.Helper()
+	p := pairedParties{a: newIdentity(t), b: newIdentity(t), sa: newStore(t), sb: newStore(t)}
+	pairOnce(t, ctx, p.a, p.b, p.sa, p.sb)
+	return p
+}
+
+// connect opens a new trusted connection; it returns (sender, receiver).
+func (p pairedParties) connect(t testing.TB, ctx context.Context) (*transport.Session, *transport.Session) {
+	t.Helper()
+	return connectTrusted(t, ctx, p.a, p.b, p.sa, p.sb)
+}
+
+// pairedSessions pairs two new devices and returns a trusted connection between them.
+func pairedSessions(t testing.TB, ctx context.Context) (*transport.Session, *transport.Session) {
+	t.Helper()
+	return newPairedParties(t, ctx).connect(t, ctx)
+}
+
+func receiverFor(t testing.TB, dest string, decide Decision) *Receiver {
 	t.Helper()
 	r, err := NewReceiver(ReceiverConfig{
 		Decide:      decide,
@@ -168,7 +184,7 @@ func receiverFor(t *testing.T, dest string, decide Decision) *Receiver {
 
 func acceptAll(context.Context, Offer) bool { return true }
 
-func randomFile(t *testing.T, dir, name string, size int) (string, [32]byte) {
+func randomFile(t testing.TB, dir, name string, size int) (string, [32]byte) {
 	t.Helper()
 	data := make([]byte, size)
 	if _, err := rand.Read(data); err != nil {
@@ -181,7 +197,7 @@ func randomFile(t *testing.T, dir, name string, size int) (string, [32]byte) {
 	return path, sha256.Sum256(data)
 }
 
-func sha256File(t *testing.T, path string) [32]byte {
+func sha256File(t testing.TB, path string) [32]byte {
 	t.Helper()
 	data, err := os.ReadFile(path) //nolint:gosec // G304: path inside t.TempDir() of this test
 	if err != nil {
@@ -190,7 +206,7 @@ func sha256File(t *testing.T, path string) [32]byte {
 	return sha256.Sum256(data)
 }
 
-func dirEntries(t *testing.T, dir string) []string {
+func dirEntries(t testing.TB, dir string) []string {
 	t.Helper()
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -204,7 +220,7 @@ func dirEntries(t *testing.T, dir string) []string {
 }
 
 // run executes a send and a receive concurrently and returns both outcomes.
-func run(t *testing.T, ctx context.Context, sender *transport.Session, spec SendSpec, progress func(Progress), r *Receiver, receiver *transport.Session) (Result, error, Result, error) {
+func run(t testing.TB, ctx context.Context, sender *transport.Session, spec SendSpec, progress func(Progress), r *Receiver, receiver *transport.Session) (Result, error, Result, error) {
 	t.Helper()
 	type out struct {
 		res Result
@@ -598,7 +614,7 @@ func TestBusyReceiverDeclinesExtraTransfers(t *testing.T) {
 	}
 }
 
-func waitFor(t *testing.T, cond func() bool) {
+func waitFor(t testing.TB, cond func() bool) {
 	t.Helper()
 	deadline := time.Now().Add(5 * time.Second)
 	for time.Now().Before(deadline) {
