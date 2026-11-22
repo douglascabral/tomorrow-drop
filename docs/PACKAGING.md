@@ -55,6 +55,10 @@ In the release workflow (`.github/workflows/release.yml`, job `macos`) the same 
 
 The command-line programs for macOS (`tdrop-macos-arm64`, `tdrop-macos-amd64`) are cross-compiled on Linux: the Go linker signs them ad hoc, which is what Apple silicon needs to run them, but they are not signed with a Developer ID nor notarized.
 
+## Names of the release files
+
+The files of a release carry the version in their name, after the program name and before the system: `TomorrowDrop-1.2.0-macos-arm64.dmg`, `TomorrowDrop-1.2.0-macos-amd64.dmg`, `TomorrowDrop-1.2.0-linux-amd64.deb`, `TomorrowDrop-1.2.0-windows-amd64.exe`, `tdrop-1.2.0-linux-amd64`, `tdrop-1.2.0-windows-amd64.exe`, `tdrop-1.2.0-macos-arm64` and `tdrop-1.2.0-macos-amd64`. `scripts/collect-release.sh` copies the built files (`bin/`, `dist/`) with those names, reading the version from the `VERSION` file; the built files keep their names without a version, so `make` and the other scripts do not change. In the workflow, a tag that is not `v<VERSION>` stops the release before anything is published, so a file never carries a version that is not the one tagged (`scripts/collect-release_test.sh`).
+
 ## Reproducibility
 
 The bundle is built from the committed `go.mod` and `go.sum`. For the core binaries, `CGO_ENABLED=0 go build -trimpath` gives reproducible output (see `docs/BUILD.md`). The graphical binary needs cgo, so its output is not byte-identical across machines.

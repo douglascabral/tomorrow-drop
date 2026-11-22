@@ -3,7 +3,9 @@ name: Release
 # Builds the command-line program (Linux, Windows and macOS), the Linux package (.deb),
 # the Windows application (.exe) and the macOS application (.dmg, Apple silicon and
 # Intel). A version tag (v*) also publishes them as a GitHub release. A manual run
-# only builds them, so the build can be checked.
+# only builds them, so the build can be checked. Every published file has the version
+# in its name (tdrop-1.2.0-macos-arm64), taken from the VERSION file by
+# scripts/collect-release.sh, which refuses a tag that is not v<VERSION>.
 #
 # macOS signing. The application and its disk image are signed with a Developer ID
 # certificate, and notarized, when these repository secrets exist:
@@ -37,11 +39,13 @@ jobs:
         run: make package-linux
       - name: Windows application (.exe)
         run: make package-windows
-      - name: Collect the files
+      - name: Collect the files, with the version in their names
+        env:
+          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
         run: |
-          mkdir -p release
-          cp bin/tdrop-linux-amd64 bin/tdrop-windows-amd64.exe bin/tdrop-macos-arm64 bin/tdrop-macos-amd64 release/
-          cp dist/TomorrowDrop-linux-amd64.deb dist/TomorrowDrop-windows-amd64.exe release/
+          scripts/collect-release.sh release \
+            bin/tdrop-linux-amd64 bin/tdrop-windows-amd64.exe bin/tdrop-macos-arm64 bin/tdrop-macos-amd64 \
+            dist/TomorrowDrop-linux-amd64.deb dist/TomorrowDrop-windows-amd64.exe
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: release-linux-windows
@@ -111,10 +115,11 @@ jobs:
             codesign --verify --strict --verbose=2 "$RUNNER_TEMP/mnt-$arch/Tomorrow Drop.app"
             hdiutil detach "$RUNNER_TEMP/mnt-$arch" >/dev/null
           done
-      - name: Collect the files
+      - name: Collect the files, with the version in their names
+        env:
+          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
         run: |
-          mkdir -p release
-          cp dist/TomorrowDrop-macos-arm64.dmg dist/TomorrowDrop-macos-amd64.dmg release/
+          scripts/collect-release.sh release dist/TomorrowDrop-macos-arm64.dmg dist/TomorrowDrop-macos-amd64.dmg
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: release-macos

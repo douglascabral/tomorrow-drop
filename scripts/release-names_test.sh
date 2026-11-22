@@ -24,6 +24,11 @@ for arch in arm64 amd64; do
 done
 grep -q 'runs-on: macos' "$workflow" || fail "$workflow must build the macOS application on a macOS runner"
 grep -q 'make package-macos' "$workflow" || fail "$workflow must run make package-macos"
+# The files of the release carry the version in their names, and a tag that is
+# not v<VERSION> is refused (scripts/collect-release.sh, collect-release_test.sh).
+[ "$(grep -c 'scripts/collect-release.sh' "$workflow")" -ge 2 ] || fail "$workflow must collect the files of both jobs with scripts/collect-release.sh"
+grep -q 'RELEASE_TAG' "$workflow" || fail "$workflow must give the tag to scripts/collect-release.sh"
+grep -qE '^\s*cp (bin|dist)/' "$workflow" && fail "$workflow must not copy release files without the version in their names"
 # The release is checksummed and published once, after every job has finished.
 grep -q 'needs: \[package, macos\]' "$workflow" || fail "$workflow must publish after the package and macos jobs"
 # The signing material comes from secrets and is never written in the workflow.

@@ -5,7 +5,7 @@ Task 068. Installation, pairing, sending and receiving, and the limits of the ap
 ## Installation
 
 - **CLI (all desktop systems):** build from source with Go 1.24 or later. See `docs/BUILD.md`.
-- **macOS application:** the release has `TomorrowDrop-macos-arm64.dmg` (Apple silicon) and `TomorrowDrop-macos-amd64.dmg` (Intel). Open it and drag Tomorrow Drop to Applications. A release signed with a Developer ID and notarized opens normally; one signed ad hoc (the log of the release says which) makes macOS ask you to confirm opening it (Control-click, Open). `make package-macos` builds them from source. See `docs/PACKAGING.md`.
+- **macOS application:** the release has `TomorrowDrop-<version>-macos-arm64.dmg` (Apple silicon) and `TomorrowDrop-<version>-macos-amd64.dmg` (Intel). Open it and drag Tomorrow Drop to Applications. A release signed with a Developer ID and notarized opens normally; one signed ad hoc (the log of the release says which) makes macOS ask you to confirm opening it (Control-click, Open). `make package-macos` builds them from source. See `docs/PACKAGING.md`.
 - **Linux, Windows, Android and iOS/iPadOS:** no packages yet. See `docs/PACKAGING.md` and `docs/MOBILE.md`.
 
 ## Pairing a device (first time only)

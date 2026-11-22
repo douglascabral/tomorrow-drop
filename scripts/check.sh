@@ -38,7 +38,8 @@ scripts/install-android_test.sh
 echo "==> publish-release tests"
 scripts/publish-release_test.sh
 
-echo "==> release names tests"
+echo "==> release files tests"
+scripts/collect-release_test.sh
 scripts/release-names_test.sh
 
 echo "==> macOS packaging tests"
