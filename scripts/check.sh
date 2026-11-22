@@ -38,6 +38,12 @@ scripts/install-android_test.sh
 echo "==> publish-release tests"
 scripts/publish-release_test.sh
 
+echo "==> release names tests"
+scripts/release-names_test.sh
+
+echo "==> macOS packaging tests"
+scripts/package-macos_test.sh
+
 echo "==> ruff"
 if [ -n "$(find . -name '*.py' -not -path './.git/*' -print -quit)" ]; then
 	command -v ruff >/dev/null 2>&1 || { echo "missing tool: ruff" >&2; exit 1; }

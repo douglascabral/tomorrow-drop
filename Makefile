@@ -43,8 +43,8 @@ cross: ## Cross-compile the CLI for Linux, Windows and macOS (amd64 and arm64)
 	@mkdir -p $(BIN)
 	GOOS=linux   GOARCH=amd64 $(CGO_OFF) $(GO) build -trimpath -ldflags "-X main.version=$(VERSION)" -o $(BIN)/tdrop-linux-amd64 ./cmd/tdrop
 	GOOS=windows GOARCH=amd64 $(CGO_OFF) $(GO) build -trimpath -ldflags "-X main.version=$(VERSION)" -o $(BIN)/tdrop-windows-amd64.exe ./cmd/tdrop
-	GOOS=darwin  GOARCH=arm64 $(CGO_OFF) $(GO) build -trimpath -ldflags "-X main.version=$(VERSION)" -o $(BIN)/tdrop-darwin-arm64 ./cmd/tdrop
-	GOOS=darwin  GOARCH=amd64 $(CGO_OFF) $(GO) build -trimpath -ldflags "-X main.version=$(VERSION)" -o $(BIN)/tdrop-darwin-amd64 ./cmd/tdrop
+	GOOS=darwin  GOARCH=arm64 $(CGO_OFF) $(GO) build -trimpath -ldflags "-X main.version=$(VERSION)" -o $(BIN)/tdrop-macos-arm64 ./cmd/tdrop
+	GOOS=darwin  GOARCH=amd64 $(CGO_OFF) $(GO) build -trimpath -ldflags "-X main.version=$(VERSION)" -o $(BIN)/tdrop-macos-amd64 ./cmd/tdrop
 
 test: ## Run the test suite
 	$(GO) test ./...
@@ -80,7 +80,7 @@ bench: ## Run the 64 MiB transfer benchmark once
 deps: ## Print the license of every module in the build graph
 	scripts/dependency-report.sh
 
-package-macos: ## Build the unsigned macOS app bundles (arm64 and amd64) into dist/
+package-macos: ## Build the macOS app bundles and .dmg images (arm64 and amd64) into dist/; signs with MACOS_SIGN_IDENTITY
 	scripts/package-macos.sh
 
 package-linux: ## Build the Linux amd64 application as a .deb in dist/ (needs Docker, dpkg)

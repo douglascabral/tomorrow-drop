@@ -1,16 +1,36 @@
 #!/usr/bin/env bash
-# Builds the unsigned macOS application bundles into dist/ (make package-macos):
-# one for Apple silicon (arm64) and one for Intel (amd64), by default. Set
-# MACOS_ARCHES to build a subset, for example MACOS_ARCHES=arm64.
+# Builds the macOS application bundles and disk images into dist/ (make
+# package-macos): one for Apple silicon (arm64) and one for Intel (amd64), by
+# default. Set MACOS_ARCHES to build a subset, for example MACOS_ARCHES=arm64.
+# Each architecture gives dist/TomorrowDrop-macos-<arch>.app and
+# dist/TomorrowDrop-macos-<arch>.dmg.
 # Uses the project's Fyne packaging tool (build/tools/fyne-ios15), built by
-# scripts/fyne-tools/build.sh when it is missing. Signing and notarization are
-# not done here (see docs/PACKAGING.md).
+# scripts/fyne-tools/build.sh when it is missing.
+#
+# Signing and notarization (docs/PACKAGING.md):
+#   MACOS_SIGN_IDENTITY    a "Developer ID Application" identity: the bundle and the
+#                          image are signed with it (hardened runtime, timestamp).
+#                          Without it they are signed ad hoc and macOS warns.
+#   MACOS_NOTARY_KEY, MACOS_NOTARY_KEY_ID, MACOS_NOTARY_ISSUER
+#                          an App Store Connect API key. When MACOS_NOTARY_KEY_ID is
+#                          set the application and the image are notarized and
+#                          stapled; this needs MACOS_SIGN_IDENTITY.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 root="$PWD"
 version="$(cat "$root/VERSION")"
 arches="${MACOS_ARCHES:-arm64 amd64}"
+
+# Check the signing setup before building anything.
+notarize=false
+if [ -n "${MACOS_NOTARY_KEY_ID:-}" ]; then
+	notarize=true
+	if [ -z "${MACOS_SIGN_IDENTITY:-}" ] || [ "$MACOS_SIGN_IDENTITY" = "-" ]; then
+		echo "notarization needs a Developer ID Application identity: set MACOS_SIGN_IDENTITY" >&2
+		exit 1
+	fi
+fi
 
 tool="$root/build/tools/fyne-ios15"
 if [ ! -x "$tool" ]; then
@@ -62,8 +82,23 @@ for arch in $arches; do
 	# (docs/MOBILE.md).
 	/usr/libexec/PlistBuddy -c "Add :NSLocalNetworkUsageDescription string Tomorrow Drop finds and transfers files with other devices on your local network." "$app/Contents/Info.plist"
 
-	# The bundle changed, so it is signed again (ad hoc), with the application
-	# identifier: macOS keys the permissions of an app by that identifier.
-	codesign --force --sign - --identifier org.tomorrowdrop.app "$app"
-	echo "Built $app ($arch, unsigned: ad-hoc signature only)."
+	# The bundle changed, so it is signed again, with the application identifier:
+	# macOS keys the permissions of an app by that identifier.
+	scripts/sign-macos.sh "$app" org.tomorrowdrop.app
+
+	if $notarize; then
+		# The application is notarized and stapled first, so the copy that people
+		# drag out of the image carries its own ticket.
+		zip="$work/Tomorrow Drop.zip"
+		rm -f "$zip"
+		ditto -c -k --keepParent "$app" "$zip"
+		scripts/notarize-macos.sh "$zip" "$app"
+	fi
+
+	dmg="dist/TomorrowDrop-macos-$arch.dmg"
+	scripts/dmg-macos.sh "$app" "$dmg"
+	if $notarize; then
+		scripts/notarize-macos.sh "$dmg" "$dmg"
+	fi
+	echo "Built $app and $dmg ($arch)."
 done
