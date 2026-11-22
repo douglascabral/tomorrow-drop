@@ -32,6 +32,37 @@ type DeviceRow struct {
 	StatusKey string
 	// Presence is the last reachability check of a paired device (presence.go).
 	Presence discovery.PresenceState
+	// Fingerprint is the hex fingerprint of a paired device, from the trust list.
+	// It identifies the device without a connection, so an offline one can be
+	// opened and unpaired. Empty for a device that is not paired.
+	Fingerprint string
+}
+
+// CurrentPeers lists the paired devices that are shown, given the address each
+// one last answered at (by hex fingerprint). The same device paired again, for
+// example after a reinstall, has a new key and often another name, and the
+// earlier pairing stays in the trust list with the same address. Only the latest
+// pairing at an address is shown. Devices with no known address are different
+// devices and are always shown. The order of peers is kept.
+func CurrentPeers(peers []trust.Peer, addrs map[string]string) []trust.Peer {
+	latest := map[string]trust.Peer{}
+	for _, p := range peers {
+		a := addrs[p.Fingerprint.Hex()]
+		if a == "" {
+			continue
+		}
+		if best, ok := latest[a]; !ok || p.AddedAt.After(best.AddedAt) {
+			latest[a] = p
+		}
+	}
+	out := make([]trust.Peer, 0, len(peers))
+	for _, p := range peers {
+		a := addrs[p.Fingerprint.Hex()]
+		if a == "" || latest[a].Fingerprint == p.Fingerprint {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // DeviceRows orders discovered devices with trusted ones first, then by name.

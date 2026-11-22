@@ -52,9 +52,13 @@ func (g *gui) pairedRows() []ui.DeviceRow {
 	}
 	addrs := g.pairedAddresses()
 	now := time.Now()
+	peers = ui.CurrentPeers(peers, addrs)
 	rows := make([]ui.DeviceRow, 0, len(peers))
 	for _, p := range peers {
-		row := ui.DeviceRow{Name: p.Name, Address: addrs[p.Fingerprint.Hex()], Trusted: true, StatusKey: "ui.status.offline"}
+		row := ui.DeviceRow{
+			Name: p.Name, Address: addrs[p.Fingerprint.Hex()], Trusted: true,
+			StatusKey: "ui.status.offline", Fingerprint: p.Fingerprint.Hex(),
+		}
 		if ep, err := manualEndpoint(row.Address); err == nil && row.Address != "" {
 			row.Presence = g.presence.State(ep, now)
 			if row.Presence == discovery.PresenceOnline {

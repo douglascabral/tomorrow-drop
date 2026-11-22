@@ -26,6 +26,7 @@ import (
 	"tomorrow-drop/internal/transfer"
 	"tomorrow-drop/internal/transport"
 	"tomorrow-drop/internal/trust"
+	"tomorrow-drop/internal/ui"
 )
 
 const (
@@ -471,6 +472,8 @@ func (c *core) state() stateJSON {
 		Jobs:        []jobJSON{},
 	}
 	peers, _ := c.store.List()
+	// The same device paired again is listed once, under its latest pairing.
+	peers = ui.CurrentPeers(peers, c.addrs)
 	for _, p := range peers {
 		addr := c.addrs[p.Fingerprint.Hex()]
 		st.Paired = append(st.Paired, pairedJSON{

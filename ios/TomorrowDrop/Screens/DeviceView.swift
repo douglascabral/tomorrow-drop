@@ -31,9 +31,17 @@ struct DeviceView: View {
 
             Section {
                 Button { showFiles = true } label: { Label(L.t("Send files", "Enviar arquivos"), systemImage: "square.and.arrow.up") }
+                    .disabled(addr.isEmpty)
                 Button { showText = true } label: { Label(L.t("Send text", "Enviar texto"), systemImage: "doc.text") }
+                    .disabled(addr.isEmpty)
                 Button { sendClipboard() } label: { Label(L.t("Send clipboard", "Enviar área de transferência"), systemImage: "doc.on.clipboard") }
+                    .disabled(addr.isEmpty)
                 Button { showReceive = true } label: { Label(L.t("Receive", "Receber"), systemImage: "square.and.arrow.down") }
+            } footer: {
+                if addr.isEmpty {
+                    Text(L.t("This device has no known address yet. Connect to it by IP once to send from here.",
+                             "Este dispositivo ainda não tem endereço conhecido. Conecte por IP uma vez para enviar daqui."))
+                }
             }
 
             Section(header: Text(L.t("Fingerprint (SHA-256)", "Impressão digital (SHA-256)"))) {

@@ -176,3 +176,21 @@ func TestUnpairForgetsPresence(t *testing.T) {
 		t.Fatalf("paired devices after unpair = %d, want 0", n)
 	}
 }
+
+// Regression: the same device paired twice, under two names, was listed twice.
+func TestPairedListHasOneLinePerAddress(t *testing.T) {
+	c := newPresenceCore(t)
+	old := addPaired(t, c.home, "Mac antigo")
+	time.Sleep(10 * time.Millisecond)
+	cur := addPaired(t, c.home, "Mac")
+	at := closedAt(t)
+	c.mu.Lock()
+	c.addrs[old.Hex()] = at.String()
+	c.addrs[cur.Hex()] = at.String()
+	c.mu.Unlock()
+
+	st := c.state()
+	if len(st.Paired) != 1 || st.Paired[0].Name != "Mac" {
+		t.Fatalf("paired = %+v, want only the latest pairing, Mac", st.Paired)
+	}
+}

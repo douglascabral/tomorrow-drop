@@ -96,3 +96,8 @@
 [x] 068. Document installation, secure pairing, manual connection, the 30-second behavior, clipboard, Downloads, lifecycle and application limits.
 [x] 069. Prepare packaging and distribution for Linux, Windows, macOS, Android and iOS/iPadOS, including signing when required.
 [x] 070. Run the final PRD v1.9 checklist and record evidence of approval for all MVP acceptance criteria.
+
+## 09 — Maintenance after 1.1.0
+
+[x] 071. Let an offline paired device, or one with no known address, be opened and unpaired from the home list on the desktop and Android applications, as on iPhone and iPad (regression: `TestOfflinePairedDeviceOpensItsScreenWithUnpair`); on iPhone and iPad a paired device with no address now opens its screen too. Not touched: the CLI (`tdrop trust remove` already works for any pairing, online or not).
+[x] 072. List a device paired more than once (same address, another key and name) once, by its latest pairing, on the desktop, Android and iPhone/iPad applications (`ui.CurrentPeers`; regressions `TestCurrentPeersKeepsOnlyTheLatestPairingAtAnAddress`, `TestHomeListsOneLinePerDeviceAddress`, `TestPairedListHasOneLinePerAddress`). The CLI keeps listing every pairing, so an old one can be removed.

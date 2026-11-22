@@ -26,6 +26,7 @@ import (
 	"tomorrow-drop/internal/settings"
 	"tomorrow-drop/internal/transfer"
 	"tomorrow-drop/internal/transport"
+	"tomorrow-drop/internal/trust"
 	"tomorrow-drop/internal/ui"
 )
 
@@ -268,7 +269,13 @@ func (g *gui) fillDeviceRow(obj fyne.CanvasObject, row ui.DeviceRow) {
 // openDevice opens a trusted device (layout 5) or starts pairing with a new one (layout 2).
 func (g *gui) openDevice(row ui.DeviceRow) {
 	if row.Trusted {
-		// A paired device without a known address cannot be reached from here.
+		// A paired device that is offline, or has no known address, cannot be
+		// contacted, so its screen opens from the trust list. That is where it is
+		// unpaired, as on the iPhone and iPad.
+		if row.Fingerprint != "" && (row.Address == "" || row.Presence != discovery.PresenceOnline) {
+			g.showTrustedDevice(row)
+			return
+		}
 		if row.Address == "" {
 			g.notify(g.tr.T("gui.home.trusted"), g.tr.T("gui.home.no_address_hint"))
 			return
@@ -288,7 +295,7 @@ func (g *gui) openDevice(row ui.DeviceRow) {
 // (layout 5). Unpairing is a quiet action at the end, since it is rare and the
 // people have to pair again.
 func (g *gui) showTrustedDevice(row ui.DeviceRow) {
-	fp, pairedAt := g.peerDetails(row.Address)
+	fp, pairedAt := g.peerDetails(row)
 	icon := canvas.NewImageFromResource(theme.ComputerIcon())
 	icon.SetMinSize(fyne.NewSize(56, 56))
 	icon.FillMode = canvas.ImageFillContain
@@ -300,12 +307,14 @@ func (g *gui) showTrustedDevice(row ui.DeviceRow) {
 	badge := newLabelStyled(g.tr.T("ui.status.trusted"), fyne.TextAlignCenter, fyne.TextStyle{})
 	badge.Importance = widget.SuccessImportance
 
-	sendFiles := widget.NewButtonWithIcon(g.tr.T("gui.device.send_files"), theme.UploadIcon(), func() { g.showSend(row.Address, false) })
+	sendFiles := widget.NewButtonWithIcon(g.tr.T("gui.device.send_files"), theme.UploadIcon(), func() { g.withAddress(row, func() { g.showSend(row.Address, false) }) })
 	sendFiles.Importance = widget.HighImportance
-	sendText := widget.NewButtonWithIcon(g.tr.T("gui.device.send_text"), theme.DocumentIcon(), func() { g.showSend(row.Address, true) })
+	sendText := widget.NewButtonWithIcon(g.tr.T("gui.device.send_text"), theme.DocumentIcon(), func() { g.withAddress(row, func() { g.showSend(row.Address, true) }) })
 	sendClipboard := widget.NewButtonWithIcon(g.tr.T("gui.send.clipboard"), theme.ContentPasteIcon(), func() {
-		g.previewClipboard(func(spec transfer.SendSpec) {
-			g.startSend(row.Address, spec, g.tr.T("gui.send.clipboard"))
+		g.withAddress(row, func() {
+			g.previewClipboard(func(spec transfer.SendSpec) {
+				g.startSend(row.Address, spec, g.tr.T("gui.send.clipboard"))
+			})
 		})
 	})
 	receive := widget.NewButtonWithIcon(g.tr.T("gui.home.receive"), theme.DownloadIcon(), g.showReceive)
@@ -316,21 +325,13 @@ func (g *gui) showTrustedDevice(row ui.DeviceRow) {
 		newLabelStyled(ui.FingerprintBlock(fp), fyne.TextAlignLeading, fyne.TextStyle{Monospace: true}),
 	)))
 	remove := widget.NewButtonWithIcon(g.tr.T("gui.trusted.remove"), theme.DeleteIcon(), func() {
-		ep, err := manualEndpoint(row.Address)
-		if err != nil {
-			return
-		}
-		if peer, ok := g.pairedAt(ep); ok {
+		if peer, ok := g.peerOf(row); ok {
 			g.confirmUnpair(peer, g.showHome)
 		}
 	})
 	remove.Importance = widget.LowImportance
 	rename := widget.NewButtonWithIcon(g.tr.T("gui.trusted.rename"), theme.DocumentCreateIcon(), func() {
-		ep, err := manualEndpoint(row.Address)
-		if err != nil {
-			return
-		}
-		if peer, ok := g.pairedAt(ep); ok {
+		if peer, ok := g.peerOf(row); ok {
 			g.askRename(peer)
 		}
 	})
@@ -349,17 +350,46 @@ func (g *gui) showTrustedDevice(row ui.DeviceRow) {
 	g.show(container.NewBorder(g.header(g.tr.T("gui.device.title")), nil, nil, nil, scroll(body)))
 }
 
-// peerDetails returns the fingerprint and pairing date of the paired device at addr.
-func (g *gui) peerDetails(addr string) (string, string) {
-	ep, err := manualEndpoint(addr)
-	if err != nil {
-		return "—", "—"
+// peerOf returns the paired device a device screen is about: found by its
+// fingerprint in the trust list when the row has one (so an offline device
+// works), otherwise by the address a connection showed it at.
+func (g *gui) peerOf(row ui.DeviceRow) (trust.Peer, bool) {
+	if row.Fingerprint != "" {
+		peers, err := g.store.List()
+		if err != nil {
+			return trust.Peer{}, false
+		}
+		for _, p := range peers {
+			if p.Fingerprint.Hex() == row.Fingerprint {
+				return p, true
+			}
+		}
+		return trust.Peer{}, false
 	}
-	p, ok := g.pairedAt(ep)
+	ep, err := manualEndpoint(row.Address)
+	if err != nil {
+		return trust.Peer{}, false
+	}
+	return g.pairedAt(ep)
+}
+
+// peerDetails returns the fingerprint and pairing date of the paired device of row.
+func (g *gui) peerDetails(row ui.DeviceRow) (string, string) {
+	p, ok := g.peerOf(row)
 	if !ok {
 		return "—", "—"
 	}
 	return p.Fingerprint.Grouped(), p.AddedAt.Local().Format("02/01/2006 15:04")
+}
+
+// withAddress runs send only when the device has a known address; otherwise it
+// says how to give it one.
+func (g *gui) withAddress(row ui.DeviceRow, send func()) {
+	if row.Address == "" {
+		g.notify(g.tr.T("gui.home.trusted"), g.tr.T("gui.home.no_address_hint"))
+		return
+	}
+	send()
 }
 
 // showManual is the manual pairing screen: IP address and port (layout 4).

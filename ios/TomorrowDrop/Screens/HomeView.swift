@@ -87,18 +87,15 @@ struct HomeView: View {
 }
 
 // PairedRow is a paired device on the home screen. Its actions (send, receive)
-// are on the device screen. A device whose address is not known yet cannot be
-// opened from here until it is connected to by IP once. Only two states are
-// shown: Online (green) when it answered its last check, Offline (red) otherwise.
+// and Unpair are on the device screen, which opens even when the device is
+// offline or its address is not known yet (the send actions then wait for an
+// address). Only two states are shown: Online (green) when it answered its last
+// check, Offline (red) otherwise.
 struct PairedRow: View {
     let paired: AppState.Paired
 
     var body: some View {
-        if let addr = paired.addr, !addr.isEmpty {
-            NavigationLink(destination: DeviceView(hex: paired.hex, addr: addr)) { label }
-        } else {
-            label
-        }
+        NavigationLink(destination: DeviceView(hex: paired.hex, addr: paired.addr ?? "")) { label }
     }
 
     private var online: Bool { paired.presence == "online" }

@@ -9,6 +9,11 @@ import (
 	"testing"
 	"time"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/widget"
+
 	"tomorrow-drop/internal/discovery"
 	"tomorrow-drop/internal/identity"
 	"tomorrow-drop/internal/pairing"
@@ -189,4 +194,129 @@ func waitForButton(t *testing.T, g *gui, text string) {
 		time.Sleep(20 * time.Millisecond)
 	}
 	t.Fatalf("window never showed the button %q; buttons = %v", text, buttonLabels(g.win.Content()))
+}
+
+// offlinePairedDevice pairs g with a device and then moves it to an address
+// where nothing answers, as a paired device that is switched off or away.
+// Only the trust store and the remembered address know about it, as after a
+// restart of the application.
+func offlinePairedDevice(t *testing.T, g *gui, address bool) ui.DeviceRow {
+	t.Helper()
+	_ = pairedDevice(t, g)
+	peers, err := g.store.List()
+	if err != nil || len(peers) != 1 {
+		t.Fatalf("paired devices = %v (%v), want one", peers, err)
+	}
+	g.pairedMu.Lock()
+	g.paired = map[netip.AddrPort]trust.Peer{}
+	g.pairedMu.Unlock()
+	if address {
+		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		gone := netip.MustParseAddrPort(ln.Addr().String())
+		_ = ln.Close()
+		g.rememberAddress(gone, peers[0].Key)
+	}
+	g.refreshDevices()
+	items := pairedItems(g)
+	if len(items) != 1 {
+		t.Fatalf("paired section = %+v, want one device", items)
+	}
+	return items[0].row
+}
+
+// tapButton taps the button with the given text.
+func tapButton(t *testing.T, obj fyne.CanvasObject, text string) {
+	t.Helper()
+	switch o := obj.(type) {
+	case *widget.Button:
+		if o.Text == text {
+			test.Tap(o)
+			return
+		}
+	case *container.Scroll:
+		tapButton(t, o.Content, text)
+	case *fyne.Container:
+		for _, child := range o.Objects {
+			if contains(buttonLabels(child), text) {
+				tapButton(t, child, text)
+				return
+			}
+		}
+	}
+}
+
+// Regression: a paired device that is offline could not be unpaired from the
+// home list. Opening it dialled the device first, the dial failed, and the
+// device screen with the Unpair action never appeared. The iPhone and iPad app
+// opens the device screen from the paired list, so this must too.
+func TestOfflinePairedDeviceOpensItsScreenWithUnpair(t *testing.T) {
+	g := newTestGUI(t)
+	row := offlinePairedDevice(t, g, true)
+	if row.Presence == discovery.PresenceOnline {
+		t.Fatalf("the device must be offline for this test")
+	}
+
+	g.openDevice(row)
+	waitForButton(t, g, g.tr.T("gui.trusted.remove"))
+
+	// The screen shows who the device is, from the trust store.
+	texts := labelTexts(g.win.Content())
+	if !contains(texts, "other") {
+		t.Fatalf("device screen does not show the paired name; texts = %v", texts)
+	}
+	for _, s := range texts {
+		if s == "—" || s == g.tr.T("gui.device.paired_at", "—") {
+			t.Fatalf("device screen shows a placeholder instead of the details: %q", s)
+		}
+	}
+
+	// Tapping Unpair asks for confirmation.
+	tapButton(t, g.win.Content(), g.tr.T("gui.trusted.remove"))
+	if g.win.Canvas().Overlays().Top() == nil {
+		t.Fatalf("Unpair on the device screen did not ask for confirmation")
+	}
+}
+
+// A paired device with no known address is offline too, and can still be
+// unpaired from its screen.
+func TestPairedDeviceWithoutAddressOpensItsScreenWithUnpair(t *testing.T) {
+	g := newTestGUI(t)
+	row := offlinePairedDevice(t, g, false)
+	if row.Address != "" {
+		t.Fatalf("address = %q, want none", row.Address)
+	}
+
+	g.openDevice(row)
+	waitForButton(t, g, g.tr.T("gui.trusted.remove"))
+
+	tapButton(t, g.win.Content(), g.tr.T("gui.trusted.remove"))
+	if g.win.Canvas().Overlays().Top() == nil {
+		t.Fatalf("Unpair on the device screen did not ask for confirmation")
+	}
+}
+
+// Regression: the same device paired twice, under two names, was listed twice
+// in the paired section.
+func TestHomeListsOneLinePerDeviceAddress(t *testing.T) {
+	g := newTestGUI(t)
+	ep := pairedDevice(t, g)
+	_ = pairedDevice(t, g)
+	peers, err := g.store.List()
+	if err != nil || len(peers) != 2 {
+		t.Fatalf("paired devices = %v (%v), want two", peers, err)
+	}
+	if err := g.store.Rename(peers[0].Fingerprint, "Antigo"); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range peers {
+		g.rememberAddress(ep, p.Key)
+	}
+	g.refreshDevices()
+
+	if n := len(pairedItems(g)); n != 1 {
+		t.Fatalf("paired lines = %d (%+v), want 1", n, pairedItems(g))
+	}
 }
