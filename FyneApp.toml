@@ -4,5 +4,5 @@
   Icon = "assets/icon.png"
   Name = "Tomorrow Drop"
   ID = "org.tomorrowdrop.app"
-  Version = "1.2.0"
-  Build = 3
+  Version = "1.2.1"
+  Build = 4
