@@ -25,8 +25,8 @@ The script fails if any tool is missing. Checks are never skipped silently.
 
 `.github/workflows/ci.yml` runs:
 
-- Job `test`, on Linux, Windows and macOS: gofmt, go vet, go test and go test -race.
-- Job `quality`, on Linux: `scripts/check.sh` with all tools installed.
+- Job `test`, on Linux, Windows and macOS: gofmt, go vet, go test and go test -race. On macOS it also runs `scripts/package-macos_test.sh` (signing and disk images need `codesign` and `hdiutil`).
+- Job `quality`, on Linux: `scripts/check.sh` with all tools installed. The macOS packaging tests are reported as "not applicable on Linux" there; `check.sh` runs them on a Mac, and `scripts/ci-config_test.sh` checks that the workflow runs them on the macOS runner.
 
 ## Fuzzing
 

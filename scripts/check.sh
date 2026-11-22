@@ -43,7 +43,16 @@ scripts/collect-release_test.sh
 scripts/release-names_test.sh
 
 echo "==> macOS packaging tests"
-scripts/package-macos_test.sh
+# They need codesign and hdiutil, which exist only on macOS. CI runs them on the
+# macOS runner of the "test" job (.github/workflows/ci.yml).
+if [ "$(uname -s)" = "Darwin" ]; then
+	scripts/package-macos_test.sh
+else
+	echo "not applicable on $(uname -s): runs on macOS (CI: job test, macos-latest)"
+fi
+
+echo "==> CI config tests"
+scripts/ci-config_test.sh
 
 echo "==> ruff"
 if [ -n "$(find . -name '*.py' -not -path './.git/*' -print -quit)" ]; then
