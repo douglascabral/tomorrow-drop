@@ -36,9 +36,11 @@ jobs:
         run: go test ./...
       - name: go test -race
         run: go test -race ./...
-      - name: macOS packaging tests
+      - name: macOS packaging and install tests
         if: runner.os == 'macOS'
-        run: scripts/package-macos_test.sh
+        run: |
+          scripts/package-macos_test.sh
+          scripts/install-macos_test.sh
 
   quality:
     name: Quality and security

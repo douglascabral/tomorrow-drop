@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests that the macOS packaging tests have a place to run. They need macOS
+# Tests that the macOS packaging and install tests have a place to run. They need macOS
 # (codesign, hdiutil), so the Linux "quality" job cannot run them: scripts/check.sh
 # runs them only on macOS and reports it otherwise, and the CI workflow runs them
 # on the macOS runner of the "test" job. Without this, a check that cannot run is
@@ -26,5 +26,16 @@ step="$(grep -n 'scripts/package-macos_test.sh' "$workflow" | head -n1 | cut -d:
 [ -n "$step" ] || fail "$workflow must run scripts/package-macos_test.sh"
 sed -n "$((step > 4 ? step - 4 : 1)),${step}p" "$workflow" | grep -q "runner.os == 'macOS'" \
 	|| fail "$workflow must run scripts/package-macos_test.sh only when runner.os is macOS"
+
+# The install-macos test uses ditto, which exists only on macOS, so it follows
+# the same rule: guarded in check.sh (a Linux run failed with "ditto: command
+# not found") and run on the macOS runner in ci.yml.
+install_line="$(grep -n 'scripts/install-macos_test.sh' "$check" | head -n1 | cut -d: -f1 || true)"
+[ -n "$install_line" ] || fail "$check must run scripts/install-macos_test.sh"
+[ -n "$guard_line" ] && [ "$guard_line" -lt "$install_line" ] || fail "$check must run scripts/install-macos_test.sh only on macOS (uname -s)"
+install_step="$(grep -n 'scripts/install-macos_test.sh' "$workflow" | head -n1 | cut -d: -f1 || true)"
+[ -n "$install_step" ] || fail "$workflow must run scripts/install-macos_test.sh"
+sed -n "$((install_step > 4 ? install_step - 4 : 1)),${install_step}p" "$workflow" | grep -q "runner.os == 'macOS'" \
+	|| fail "$workflow must run scripts/install-macos_test.sh only when runner.os is macOS"
 
 echo "ci config: ok"

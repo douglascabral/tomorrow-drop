@@ -35,9 +35,6 @@ go test -race ./...
 echo "==> install-android tests"
 scripts/install-android_test.sh
 
-echo "==> install-macos tests"
-scripts/install-macos_test.sh
-
 echo "==> publish-release tests"
 scripts/publish-release_test.sh
 
@@ -45,11 +42,12 @@ echo "==> release files tests"
 scripts/collect-release_test.sh
 scripts/release-names_test.sh
 
-echo "==> macOS packaging tests"
-# They need codesign and hdiutil, which exist only on macOS. CI runs them on the
+echo "==> macOS packaging and install tests"
+# They need codesign, hdiutil and ditto, which exist only on macOS. CI runs them on the
 # macOS runner of the "test" job (.github/workflows/ci.yml).
 if [ "$(uname -s)" = "Darwin" ]; then
 	scripts/package-macos_test.sh
+	scripts/install-macos_test.sh
 else
 	echo "not applicable on $(uname -s): runs on macOS (CI: job test, macos-latest)"
 fi
