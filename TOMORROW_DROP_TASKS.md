@@ -111,3 +111,4 @@
 [x] 080. Add `make install-macos` to build and install the app on the Mac in use (`scripts/install-macos.sh`, `scripts/install-macos_test.sh`).
 [x] 081. Shorten the top of the home screen in the desktop and Android applications (two rows; the visibility notice moved under the buttons) so the device list gets the height (`TestHomeHeadLeavesRoomForTheList`). Pending: the same on iPhone and iPad (`ios/`), which has its own screens.
 [   ] 082. Shorten the header of the home screen on iPhone and iPad as in task 081.
+[x] 083. Release 1.3.2: set the version (`VERSION`, `FyneApp.toml`, `Info.plist`; build 5) and write the notes of 1.3.0, 1.3.1 and 1.3.2. The tags v1.3.0 and v1.3.1 were created with `VERSION` at 1.2.1, so the release process refuses them; 1.3.2 carries their changes.
