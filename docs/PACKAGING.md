@@ -32,6 +32,8 @@ It produces, for each processor architecture, a bundle with its own binary and a
 
 The disk image is what is published: it opens to `Tomorrow Drop.app` and a link to Applications, to drag the application across. Each run replaces the files. `MACOS_ARCHES=arm64 make package-macos` builds only the listed architectures. The binaries are compiled with `CGO_ENABLED=1` by the Apple toolchain of this machine (Xcode); the amd64 build runs on an Apple silicon Mac without Rosetta, because only the compiler targets that architecture. Each bundle is checked with `lipo` before packaging, so a wrong architecture stops the build.
 
+`make install-macos` is for the Mac you develop on: it builds only this machine's architecture (`scripts/install-macos.sh`), asks a running Tomorrow Drop to quit, replaces `/Applications/Tomorrow Drop.app` and opens it. `INSTALL_DIR=~/Applications make install-macos` installs elsewhere, and `NO_OPEN=1` skips opening. The signature is ad hoc unless `MACOS_SIGN_IDENTITY` is set. Tested with a fake packager (`scripts/install-macos_test.sh`); a real run built the arm64 bundle and installed it into a temporary folder (not opened, and not tried on an Intel Mac).
+
 Both bundles are tested here only as built files; they were not started on Intel hardware.
 
 ## macOS signing and notarization

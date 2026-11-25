@@ -23,7 +23,7 @@ FUZZ_TARGETS := \
 	./internal/trust:FuzzTrustFile
 
 .DEFAULT_GOAL := help
-.PHONY: help build cli gui cross test race vet fmt fmt-fix lint check fuzz bench deps package-macos package-linux package-windows install-android install-ios run run-cli run-dev clean
+.PHONY: help build cli gui cross test race vet fmt fmt-fix lint check fuzz bench deps package-macos package-linux package-windows install-macos install-android install-ios run run-cli run-dev clean
 
 help: ## Show this help
 	@echo "Tomorrow Drop make targets:"
@@ -88,6 +88,9 @@ package-linux: ## Build the Linux amd64 application as a .deb in dist/ (needs Do
 
 package-windows: ## Build the Windows amd64 application (.exe, with icon) in dist/ (needs Docker)
 	scripts/package-windows.sh
+
+install-macos: ## Build the app for this Mac and install it in /Applications (INSTALL_DIR to change)
+	scripts/install-macos.sh
 
 install-android: ## Build the Android APK and install it on the connected phone
 	scripts/install-android.sh

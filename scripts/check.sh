@@ -35,6 +35,9 @@ go test -race ./...
 echo "==> install-android tests"
 scripts/install-android_test.sh
 
+echo "==> install-macos tests"
+scripts/install-macos_test.sh
+
 echo "==> publish-release tests"
 scripts/publish-release_test.sh
 
