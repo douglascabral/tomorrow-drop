@@ -15,11 +15,11 @@ import (
 // gets the vertical room: the name, the address and the fingerprint fit in two
 // lines of controls.
 func TestHomeHeadLeavesRoomForTheList(t *testing.T) {
-	// The desktop stacks the logo above the text, so it needs a little more.
+	// The logo is stacked above the text, so the top needs a little room.
 	for name, mobile := range map[string]bool{"desktop": false, "phone": true} {
-		maxHeadHeight := float32(130)
-		if !mobile {
-			maxHeadHeight = 170
+		maxHeadHeight := float32(170)
+		if mobile {
+			maxHeadHeight = 185 // larger text and touch spacing
 		}
 		g := newTestGUI(t)
 		g.mobile = mobile
@@ -32,11 +32,18 @@ func TestHomeHeadLeavesRoomForTheList(t *testing.T) {
 	}
 }
 
-// On desktop the logo sits above the name and the slogan, all centred on the
-// same line, so the top of the screen looks centred.
-func TestDesktopHomeBrandIsStackedAndCentred(t *testing.T) {
+// The logo sits above the name and the slogan, all centred on the same line, on
+// desktop and on phones, so the top of the screen looks centred.
+func TestHomeBrandIsStackedAndCentred(t *testing.T) {
+	for name, mobile := range map[string]bool{"desktop": false, "phone": true} {
+		t.Run(name, func(t *testing.T) { checkBrandStackedAndCentred(t, mobile) })
+	}
+}
+
+func checkBrandStackedAndCentred(t *testing.T, mobile bool) {
 	g := newTestGUI(t)
-	g.app.Settings().SetTheme(themeFor(false))
+	g.mobile = mobile
+	g.app.Settings().SetTheme(themeFor(mobile))
 	g.localAddrs = g.addrs()
 	head := g.homeHead(func() {})
 	const width = 800

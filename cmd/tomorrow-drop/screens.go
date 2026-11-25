@@ -137,7 +137,7 @@ func (g *gui) showHome() {
 
 // homeHead is the top of the home screen, kept short so the device list gets the
 // room: the logo with the name and slogan and the refresh button, then this
-// device's address with its fingerprint. On desktop the logo is above the text. refresh runs when the button is
+// device's address with its fingerprint. The logo is above the text. refresh runs when the button is
 // pressed.
 func (g *gui) homeHead(refresh func()) fyne.CanvasObject {
 	refreshBtn := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), refresh)
@@ -148,34 +148,27 @@ func (g *gui) homeHead(refresh func()) fyne.CanvasObject {
 	address := g.tr.T("gui.home.this_device", ui.LocalAddressText(g.localAddrs))
 	fingerprint := g.fingerprintButton()
 
+	// The logo above the name and the slogan, centred in the whole width, on
+	// desktop and on phones; the refresh button sits over the right edge.
+	centred := g.compact(container.NewVBox(
+		container.NewCenter(logo),
+		newLabelStyled(g.tr.T("app.nome"), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+		newLabelStyled(g.tr.T("app.slogan"), fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
+	))
+	brand := container.NewStack(centred, container.NewBorder(container.NewHBox(layout.NewSpacer(), refreshBtn), nil, nil, nil))
+
+	addressLabel := newLabelStyled(address, fyne.TextAlignLeading, fyne.TextStyle{Monospace: true})
 	if !g.mobile {
-		// The logo above the name and the slogan, centred in the whole width; the
-		// refresh button sits over the right edge.
-		centred := container.NewVBox(
-			container.NewCenter(logo),
-			newLabelStyled(g.tr.T("app.nome"), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
-			newLabelStyled(g.tr.T("app.slogan"), fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
-		)
-		brand := container.NewStack(centred, container.NewBorder(container.NewHBox(layout.NewSpacer(), refreshBtn), nil, nil, nil))
-		// The address in the left corner and the fingerprint in the right one.
 		// The address does not wrap: a wrapped label has almost no minimum width,
 		// so a narrow window squeezed it under the button.
-		addressLabel := newLabelStyled(address, fyne.TextAlignLeading, fyne.TextStyle{Monospace: true})
 		addressLabel.Wrapping = fyne.TextWrapOff
-		device := container.NewBorder(nil, nil, addressLabel, fingerprint)
-		return container.NewVBox(brand, device)
+		// The address in the left corner and the fingerprint in the right one.
+		return container.NewVBox(brand, container.NewBorder(nil, nil, addressLabel, fingerprint))
 	}
-
-	// On a phone the logo is at the left edge, the text beside it, and the
-	// fingerprint button is only an icon, to keep the address on one line.
-	title := container.NewVBox(
-		newLabelStyled(g.tr.T("app.nome"), fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-		newLabelStyled(g.tr.T("app.slogan"), fyne.TextAlignLeading, fyne.TextStyle{Italic: true}),
-	)
-	brand := container.NewBorder(nil, nil, logo, refreshBtn, container.NewCenter(title))
+	// On a phone the fingerprint button is only an icon, to keep the address on
+	// one line.
 	fingerprint.SetText("")
-	device := container.NewBorder(nil, nil, nil, fingerprint, newLabelStyled(address, fyne.TextAlignLeading, fyne.TextStyle{Monospace: true}))
-	return g.compact(container.NewVBox(brand, device))
+	return container.NewVBox(brand, g.compact(container.NewBorder(nil, nil, nil, fingerprint, addressLabel)))
 }
 
 // fingerprintButton opens the whole of this device's fingerprint. It shows no
