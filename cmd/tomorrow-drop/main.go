@@ -57,7 +57,10 @@ func main() {
 	g.screenOn = func(on bool) { setScreenAwake(g.win, on) }
 	g.mobile = fyne.CurrentDevice().IsMobile()
 	g.win = a.NewWindow(tr.T("app.nome"))
-	g.win.Resize(fyne.NewSize(420, 640))
+	// Desktops open wide, at 80% of the free screen area; phones are sized by
+	// the system.
+	area, known := screenArea()
+	g.win.Resize(initialWindowSize(g.mobile, area, known))
 
 	// Discovery and incoming transfers follow the window: foreground means
 	// available, background means not available (PRD §17.2, §18).
