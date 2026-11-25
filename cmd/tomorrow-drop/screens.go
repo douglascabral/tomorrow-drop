@@ -16,6 +16,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -39,7 +40,7 @@ func (g *gui) header(title string) fyne.CanvasObject {
 func (g *gui) headerWith(title string, onBack func()) fyne.CanvasObject {
 	back := widget.NewButtonWithIcon("", theme.NavigateBackIcon(), onBack)
 	name := newLabelStyled(title, fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
-	return container.NewBorder(nil, nil, back, nil, container.NewCenter(g.compact(name)))
+	return container.New(&centredTitleLayout{}, back, container.NewCenter(g.compact(name)))
 }
 
 // card wraps content in a rounded-looking surface.
@@ -83,15 +84,6 @@ func (g *gui) showHome() {
 	// The address is read again on every visit, so the screen and the device
 	// list follow a change of network.
 	g.localAddrs = g.addrs()
-	thisDevice := newLabelStyled(g.tr.T("gui.home.this_device", ui.LocalAddressText(g.localAddrs)), fyne.TextAlignCenter, fyne.TextStyle{Monospace: true})
-
-	refresh := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
-		if err := g.ctl.Refresh(); err != nil {
-			g.notify(g.tr.T("gui.home.refresh"), g.tr.T(apperr.MessageKey(err)))
-		}
-	})
-	refresh.Importance = widget.LowImportance
-
 	list := widget.NewList(
 		func() int { return len(g.homeList) },
 		g.newHomeItem,
@@ -108,28 +100,27 @@ func (g *gui) showHome() {
 	settingsBtn := widget.NewButtonWithIcon(g.tr.T("gui.home.settings"), theme.SettingsIcon(), g.showSettings)
 	settingsBtn.Importance = widget.LowImportance
 
-	// This device's fingerprint sits under its address, always at hand: it is what
-	// the other person compares when pairing. A tap shows the whole of it.
-	fingerprint := g.fingerprintButton()
 	headItems := []fyne.CanvasObject{}
 	if g.sharedWaiting() {
 		g.pendingMu.Lock()
 		headItems = append(headItems, g.shareBanner(g.share))
 		g.pendingMu.Unlock()
 	}
-	head := container.NewVBox(append(headItems,
-		g.compact(container.NewVBox(
-			container.NewCenter(logoImage(g.logoSize())),
-			newLabelStyled(g.tr.T("app.nome"), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
-			newLabelStyled(g.tr.T("app.slogan"), fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
-			thisDevice,
-		)),
-		fingerprint,
+	head := container.NewVBox(append(headItems, g.homeHead(func() {
+		if err := g.ctl.Refresh(); err != nil {
+			g.notify(g.tr.T("gui.home.refresh"), g.tr.T(apperr.MessageKey(err)))
+		}
+	}))...)
+	// The notice that the device is visible only while the app is open stays on
+	// the screen, below the two buttons, out of the way of the list.
+	buttons := fyne.CanvasObject(container.NewGridWithColumns(2, manual, settingsBtn))
+	if g.mobile {
+		buttons = container.NewVBox(manual, settingsBtn)
+	}
+	foot := container.NewVBox(
+		buttons,
 		newLabelStyled(g.tr.T("gui.home.visible_only_open"), fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
-		// The section titles are in the list (home_list.go); only Refresh is fixed.
-		container.NewBorder(nil, nil, nil, refresh),
-	)...)
-	foot := container.NewVBox(manual, settingsBtn)
+	)
 	// With no device the list is not blank: it says it is looking, and what to do.
 	hint := newLabelStyled(g.tr.T("gui.home.empty_hint"), fyne.TextAlignCenter, fyne.TextStyle{})
 	hint.Importance = widget.LowImportance
@@ -142,6 +133,49 @@ func (g *gui) showHome() {
 	}
 	middle := container.NewStack(list, container.NewBorder(container.NewPadded(g.emptyHint), nil, nil, nil))
 	g.show(container.NewBorder(container.NewPadded(head), container.NewPadded(foot), nil, nil, middle))
+}
+
+// homeHead is the top of the home screen, kept short so the device list gets the
+// room: the logo with the name and slogan and the refresh button, then this
+// device's address with its fingerprint. On desktop the logo is above the text. refresh runs when the button is
+// pressed.
+func (g *gui) homeHead(refresh func()) fyne.CanvasObject {
+	refreshBtn := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), refresh)
+	refreshBtn.Importance = widget.LowImportance
+	logo := logoImage(g.logoSize())
+	// This device's fingerprint sits beside its address, always at hand: it is
+	// what the other person compares when pairing. A tap shows the whole of it.
+	address := g.tr.T("gui.home.this_device", ui.LocalAddressText(g.localAddrs))
+	fingerprint := g.fingerprintButton()
+
+	if !g.mobile {
+		// The logo above the name and the slogan, centred in the whole width; the
+		// refresh button sits over the right edge.
+		centred := container.NewVBox(
+			container.NewCenter(logo),
+			newLabelStyled(g.tr.T("app.nome"), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+			newLabelStyled(g.tr.T("app.slogan"), fyne.TextAlignCenter, fyne.TextStyle{Italic: true}),
+		)
+		brand := container.NewStack(centred, container.NewBorder(container.NewHBox(layout.NewSpacer(), refreshBtn), nil, nil, nil))
+		// The address in the left corner and the fingerprint in the right one.
+		// The address does not wrap: a wrapped label has almost no minimum width,
+		// so a narrow window squeezed it under the button.
+		addressLabel := newLabelStyled(address, fyne.TextAlignLeading, fyne.TextStyle{Monospace: true})
+		addressLabel.Wrapping = fyne.TextWrapOff
+		device := container.NewBorder(nil, nil, addressLabel, fingerprint)
+		return container.NewVBox(brand, device)
+	}
+
+	// On a phone the logo is at the left edge, the text beside it, and the
+	// fingerprint button is only an icon, to keep the address on one line.
+	title := container.NewVBox(
+		newLabelStyled(g.tr.T("app.nome"), fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		newLabelStyled(g.tr.T("app.slogan"), fyne.TextAlignLeading, fyne.TextStyle{Italic: true}),
+	)
+	brand := container.NewBorder(nil, nil, logo, refreshBtn, container.NewCenter(title))
+	fingerprint.SetText("")
+	device := container.NewBorder(nil, nil, nil, fingerprint, newLabelStyled(address, fyne.TextAlignLeading, fyne.TextStyle{Monospace: true}))
+	return g.compact(container.NewVBox(brand, device))
 }
 
 // fingerprintButton opens the whole of this device's fingerprint. It shows no
@@ -177,9 +211,9 @@ func (g *gui) showFingerprint() {
 // the list gets the room.
 func (g *gui) logoSize() float32 {
 	if g.mobile {
-		return 64
+		return 40
 	}
-	return 96
+	return 44
 }
 
 // refreshDevices rebuilds the device list from the ephemeral registry (task 022).
