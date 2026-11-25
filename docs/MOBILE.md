@@ -84,7 +84,7 @@ Tomorrow Drop appears in the share menu of other apps (`ACTION_SEND` and `ACTION
 
 ## Saving a received file on Android
 
-Saving a received file opens the system's storage picker, which takes the app to the background. Leaving the foreground cancels the running operations (task 057), so a reception was cut before its result reached the sender: the sender reported "the connection ended before the transfer finished". While the picker is open, the cancellation is skipped (`gui.pickingFile`, `TestPickerKeepsTheReceptionRunning`). Still to check on a device: the sender waits 30 s for the result, so a person who takes longer than that in the picker makes the sender fail with a timeout. Asking for the location before the data is sent would remove that limit.
+Saving a received file opens the system's storage picker, which takes the app to the background. Leaving the foreground cancels the running operations (task 057), so a reception was cut before its result reached the sender: the sender reported "the connection ended before the transfer finished". While the picker is open, the cancellation is skipped (`gui.pickingFile`, `TestPickerKeepsTheReceptionRunning`). The picker opens once per file, after the sender sent DONE, so a transfer of several files made the sender fail with a timeout (30 s) although every file was saved. The sender now waits `protocol.PublishTimeout` (5 minutes) for the result (`TestResultWaitCoversSavePrompts`). Core change: it applies to every sender (CLI, desktop, Android, iPhone and iPad). Still to check on a device. A person who takes longer than 5 minutes in the pickers still fails the sender; asking for the locations before the data is sent would remove that limit.
 
 ## iPhone and iPad: native interface
 

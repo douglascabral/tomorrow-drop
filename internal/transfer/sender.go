@@ -160,12 +160,15 @@ func streamItem(ctx context.Context, s *transport.Session, id string, index int,
 	}
 }
 
+// finishTimeout is how long the sender waits for the recipient to publish.
+var finishTimeout = protocol.PublishTimeout
+
 // finish sends DONE and waits for the recipient to confirm publication.
 func finish(ctx context.Context, s *transport.Session, id string) error {
 	if err := s.Send(protocol.MsgTransferDone, idBody{ID: id}); err != nil {
 		return contextOr(ctx, err)
 	}
-	res, err := s.ReceiveWithin(protocol.IdleTimeout)
+	res, err := s.ReceiveWithin(finishTimeout)
 	if err != nil {
 		return contextOr(ctx, err)
 	}
